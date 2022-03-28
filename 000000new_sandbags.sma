@@ -105,7 +105,7 @@ public plugin_init()
 	//RegisterHam(Ham_TakeDamage,"func_wall","fw_TakeDamage");  
 
 	RegisterHam(Ham_TakeDamage,"func_wall","fw_TakeDamage"); 
-	RegisterHam(Ham_Killed, "func_wall", "fw_PlayerKilled", 1)
+	/*RegisterHam(Ham_Killed, "func_wall", "fw_PlayerKilled", 1)*/
 	RegisterHam(Ham_Killed, "player", "Player_Death", 1)
 	
 	register_forward(FM_OnFreeEntPrivateData, "OnFreeEntPrivateData");
