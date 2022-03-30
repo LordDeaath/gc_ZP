@@ -17,29 +17,22 @@ native zp_respawn_task_remove(id);
 #define VERSION "0.1.3"
 #define AUTHOR "many"
 
-//new CsTeams:zTeam[33]
-new zDeath[33]
-//new bool:type_spec[33] = false
-new g_cvar
-//new gUsed[33]
-
-new g_msgid_ClCorpse
+new g_msgid_ClCorpse, g_MsgDeathMsg;
 
 new Trie:SpecTime;
 
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	/* Cvar */
-	g_cvar	= register_cvar("amx_specmode",	"0") 	// 0 - enable use to all, 1 - enable use only ADMINs
-	
 	/* Client Commands */
 	register_clcmd("say /spec", 		"cmdSpec", ADMIN_ALL, "- go to spectator")
 	register_clcmd("say_team /spec", 	"cmdSpec", ADMIN_ALL, "- go to spectator")
 	register_clcmd("say /back", 		"cmdBack", ADMIN_ALL, "- go back to your team")
 	register_clcmd("say_team /back", 	"cmdBack", ADMIN_ALL, "- go back to your team")
 	
+	g_MsgDeathMsg = get_user_msgid("DeathMsg")
 	g_msgid_ClCorpse = get_user_msgid("ClCorpse")
+
 	SpecTime = TrieCreate()
 }
 
@@ -82,7 +75,13 @@ public Float:native_cant_respawn(id)
 }
 public native_transfer_spec(id)
 {	
-	return Spec(id);
+	if(!SpecAllowed(id))
+	{
+		return false;
+	}
+
+	Spec(id)
+	return true;
 }
 
 public cmdSpec(id)
@@ -93,179 +92,31 @@ public cmdSpec(id)
 		return PLUGIN_HANDLED;
 	}
 	
-	if (cs_get_user_team(id) == CS_TEAM_SPECTATOR)
+	if (cs_get_user_team(id) == CS_TEAM_SPECTATOR||cs_get_user_team(id) == CS_TEAM_UNASSIGNED)
 	return PLUGIN_HANDLED;
 	
-	if(!get_pcvar_num(g_cvar)) Spec(id)
-	else if( get_pcvar_num(g_cvar) && (get_user_flags(id) & ADMIN_KICK)) Spec(id)
-	else if( get_pcvar_num(g_cvar) && !(get_user_flags(id) & ADMIN_KICK)) PrintUserNotAdmin(id)
+	Spec(id)
 	return PLUGIN_HANDLED;
 }
 
 public cmdBack(id)
 {
-	if (/*type_spec[id] &&*/ cs_get_user_team(id) == CS_TEAM_SPECTATOR || cs_get_user_team(id) == CS_TEAM_UNASSIGNED) Back(id)
-	else if( get_pcvar_num(g_cvar) && !(get_user_flags(id) & ADMIN_KICK) ) PrintUserNotAdmin(id)
-	return PLUGIN_HANDLED;
-}
-/*
-public zp_fw_gamemodes_end()
-{
-	new iPlayer
-	for (iPlayer = 1; iPlayer <= 32; iPlayer++)
-	{
-		if(is_user_connected(iPlayer))
-			gUsed[iPlayer] = 0
-	}	
-}*/
-public Spec(id)
-{	
-	if(get_user_flags(id) & ADMIN_KICK)
-	{
-		zDeath[id] = cs_get_user_deaths(id)
-		//type_spec[id] = true
-		//zTeam[id] = cs_get_user_team(id)
-		set_msg_block(g_msgid_ClCorpse, BLOCK_ONCE)
-		cs_set_user_team(id, CS_TEAM_SPECTATOR)
-		user_silentkill(id)
-		zp_respawn_task_remove(id)
-		ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
-		return true;
-	}
-	
-	if(is_user_alive(id))
+	if(cs_get_user_team(id) == CS_TEAM_SPECTATOR||cs_get_user_team(id) == CS_TEAM_UNASSIGNED)
 	{		
-		new authid[32]
-		get_user_authid(id,authid,charsmax(authid))
-		TrieSetCell(SpecTime, authid, get_gametime())
+		zp_force_respawn(id)
+		set_pdata_int(id, 125, get_pdata_int(id, 125, 5) &  ~(1<<8), 5)
+		set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_SET)
+		engclient_cmd(id, "jointeam", "5")	
+		engclient_cmd(id, "joinclass","5")	
+		set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_NOT)	
 	}
-
-	zDeath[id] = cs_get_user_deaths(id)
-	cs_set_user_team(id, CS_TEAM_SPECTATOR)
-	user_kill(id)
-	zp_respawn_task_remove(id)
-	ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
-	
-	return true;
-	/*
-	if(gUsed[id] == 0)
-	{
-		zDeath[id] = cs_get_user_deaths(id)
-		//type_spec[id] = true
-		//zTeam[id] = cs_get_user_team(id)
-		cs_set_user_team(id, CS_TEAM_SPECTATOR)
-		user_kill(id)
-		ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
-		gUsed[id]++
-		return 1;
-	}
-	
-	ColorChat(id, GREEN, "[GC]^03 You can't go to spectate now!")
-	return 0;*/
+	return PLUGIN_HANDLED;
 }
 
 public zp_fw_gamemodes_end()
 {
 	TrieClear(SpecTime);
 }
-
-public Back(id)
-{	
-	zp_force_respawn(id)
-	set_pdata_int(id, 125, get_pdata_int(id, 125, 5) &  ~(1<<8), 5)
-	set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_SET)
-	engclient_cmd(id, "jointeam", "5")	
-	engclient_cmd(id, "joinclass","5")	
-	set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_NOT)	
-	/*
-	new gMode = zp_gamemodes_get_current()
-	if(gMode == g_NormalID || gMode == g_MultiInfectionID)
-	{
-		if(zp_core_get_human_count() > 1)
-		{			
-			cs_set_user_team(id, CS_TEAM_T)
-			cs_set_user_deaths(id, zDeath[id])
-			zp_core_respawn_as_zombie(id, true)
-			ExecuteHamB(Ham_CS_RoundRespawn, id)			
-			give_item(id, "weapon_knife")
-		}
-		else
-		{			
-			if(random(2))
-			cs_set_user_team(id, CS_TEAM_T)
-			else
-			cs_set_user_team(id, CS_TEAM_CT)
-			
-			cs_set_user_deaths(id, zDeath[id])
-		}
-	}
-	else
-	if(gMode == g_RaceID || gMode == g_AlienID)
-	{		
-		cs_set_user_team(id, CS_TEAM_CT)
-		cs_set_user_deaths(id, zDeath[id])
-		zp_core_respawn_as_zombie(id, false)
-		ExecuteHamB(Ham_CS_RoundRespawn, id)			
-		give_item(id, "weapon_knife")
-	}
-	else
-	if(gMode == ZP_NO_GAME_MODE)
-	{			
-		if(random(2))
-		cs_set_user_team(id, CS_TEAM_T)
-		else
-		cs_set_user_team(id, CS_TEAM_CT)
-		
-		cs_set_user_deaths(id, zDeath[id])
-		ExecuteHamB(Ham_CS_RoundRespawn, id)			
-		give_item(id, "weapon_knife")
-	}
-	else
-	{		
-		if(random(2))
-		cs_set_user_team(id, CS_TEAM_T)
-		else
-		cs_set_user_team(id, CS_TEAM_CT)
-		
-		cs_set_user_deaths(id, zDeath[id])
-	}*/
-	
-}
-
-/*public FirstRespawn(id)
-{
-	cs_user_spawn(id)
-}
-
-public SecondRespawn(id)
-{
-	cs_user_spawn(id)
-	give_item(id, "weapon_knife")
-	zp_core_force_infect(id)
-}*/
-
-PrintUserNotAdmin(id)
-{
-	client_print(id,print_chat,"Only Admins can use /spec, /back command")
-}
-/*
-public PrintRule(id)
-{
-	if ( is_user_connected(id) && !is_user_bot(id) && !is_user_hltv(id) ){
-		client_print(id,print_chat,"Type /spec if you want to go Spectator")
-		client_print(id,print_chat,"Type /back to return from Spectator")
-	}
-}*/
-/*
-public client_putinserver(id)
-{
-	if(!get_pcvar_num(g_cvar)) Rule(id)
-	else if( get_pcvar_num(g_cvar) && (get_user_flags(id) & ADMIN_KICK)) Rule(id)
-}
-
-//public client_disconnect(id) type_spec[id] = false
-//public client_connect(id) type_spec[id] = false
-public Rule(id) set_task(20.0, "PrintRule", id)*/
 
 bool:SpecAllowed(id)
 {
@@ -281,4 +132,43 @@ bool:SpecAllowed(id)
 		if(cs_get_user_team(i)==team) return true;
 	}
 	return false;
+}
+
+public Spec(id)
+{	
+	if(get_user_flags(id) & ADMIN_KICK)
+	{
+		if(is_user_alive(id))
+		{			
+			set_msg_block(g_msgid_ClCorpse, BLOCK_ONCE)	
+			set_pev(id, pev_health, 0.0);
+			set_pev(id, pev_deadflag, DEAD_DEAD);	
+		}	
+		engclient_cmd(id, "jointeam", "6")						
+		zp_respawn_task_remove(id)
+		ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
+		return;
+	}
+
+	if(is_user_alive(id))
+	{		
+		set_pev(id, pev_health, 0.0);
+		set_pev(id, pev_deadflag, DEAD_DEAD);		
+		message_begin(MSG_BROADCAST, g_MsgDeathMsg)
+		write_byte(id)
+		write_byte(id)
+		write_byte(0)
+		write_string("world")
+		message_end()
+
+		new authid[32]
+		get_user_authid(id,authid,charsmax(authid))
+		TrieSetCell(SpecTime, authid, get_gametime())
+	}
+	
+	engclient_cmd(id, "jointeam", "6")	
+	zp_respawn_task_remove(id)
+	ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
+	
+	return;
 }
