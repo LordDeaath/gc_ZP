@@ -277,39 +277,46 @@ public plugin_init()
 	g_fwdUserReceiveXP    = CreateMultiForward("crxranks_user_receive_xp",    ET_STOP,   FP_CELL, FP_CELL, FP_CELL)
 	g_fwdUserXPUpdated    = CreateMultiForward("crxranks_user_xp_updated",    ET_IGNORE, FP_CELL, FP_CELL, FP_CELL)
 
-	if(g_eSettings[USE_MYSQL])
-	{
-		g_iSqlTuple = SQL_MakeDbTuple(g_eSettings[SQL_HOST], g_eSettings[SQL_USER], g_eSettings[SQL_PASSWORD], g_eSettings[SQL_DATABASE])
-
-		new iErrorCode, Handle:iSqlConnection = SQL_Connect(g_iSqlTuple, iErrorCode, g_szSqlError, charsmax(g_szSqlError))
-
-		if(iSqlConnection == Empty_Handle)
-		{
-			log_amx(g_szSqlError)
-			log_amx("%L", LANG_SERVER, "CRXRANKS_MYSQL_FAILED")
-			g_eSettings[USE_MYSQL] = false
-		}
-		else
-		{
-			SQL_FreeHandle(iSqlConnection)
-		}
-
-		new szQuery[MAX_QUERY_LENGTH]
-
-		formatex(szQuery, charsmax(szQuery), "CREATE TABLE IF NOT EXISTS `%s` (`Nickname` VARCHAR(64) NOT NULL, `SteamID` VARCHAR(%i) NOT NULL, `XP` INT(%i) NOT NULL, `Level` INT(%i) NOT NULL,\
-		`Next XP` INT(%i) NOT NULL, `Rank` VARCHAR(%i) NOT NULL, `Next Rank` VARCHAR(%i) NOT NULL, PRIMARY KEY(Player));",\
-		g_eSettings[SQL_TABLE], MAX_SQL_PLAYER_LENGTH, CRXRANKS_MAX_XP_LENGTH, CRXRANKS_MAX_XP_LENGTH, CRXRANKS_MAX_XP_LENGTH,\
-		MAX_SQL_RANK_LENGTH, MAX_SQL_RANK_LENGTH)
-
-		SQL_ThreadQuery(g_iSqlTuple, "QueryHandler", szQuery)
-	}
-
-	if(!g_eSettings[USE_MYSQL])
-	{
-		g_iVault = nvault_open(g_eSettings[VAULT_NAME])
-	}
+	db_connect()
 }
 
+public db_connect()
+{
+	g_iSqlTuple = SQL_MakeDbTuple(g_eSettings[SQL_HOST], g_eSettings[SQL_USER], g_eSettings[SQL_PASSWORD], g_eSettings[SQL_DATABASE])
+
+	new iErrorCode, Handle:iSqlConnection = SQL_Connect(g_iSqlTuple, iErrorCode, g_szSqlError, charsmax(g_szSqlError))
+
+	if(iSqlConnection == Empty_Handle)
+	{
+		set_task(10.0, "db_connect");
+		return;
+	}
+	else
+	{
+		SQL_FreeHandle(iSqlConnection)
+	}
+
+	new szQuery[MAX_QUERY_LENGTH]
+
+	formatex(szQuery, charsmax(szQuery), "CREATE TABLE IF NOT EXISTS `%s` (Nickname VARCHAR(64) NOT NULL, SteamID VARCHAR(%i) NOT NULL, XP INT(%i) NOT NULL, Level INT(%i) NOT NULL,\
+	`Next XP` INT(%i) NOT NULL, Rank VARCHAR(%i) NOT NULL, `Next Rank` VARCHAR(%i) NOT NULL, PRIMARY KEY(Player));",\
+	g_eSettings[SQL_TABLE], MAX_SQL_PLAYER_LENGTH, CRXRANKS_MAX_XP_LENGTH, CRXRANKS_MAX_XP_LENGTH, CRXRANKS_MAX_XP_LENGTH,\
+	MAX_SQL_RANK_LENGTH, MAX_SQL_RANK_LENGTH)
+	SQL_ThreadQuery(g_iSqlTuple, "QueryHandler", szQuery)
+
+	db_loadcurrent()
+	log_amx("Connected successfully!")
+}
+
+public db_loadcurrent()
+{
+	for(new i=1;i<=MAX_PLAYERS;i++)
+	{
+		if(Loaded[i]) continue;
+		get_user_authid(i, g_ePlayerData[i][SaveInfo], charsmax(g_ePlayerData[][SaveInfo]))
+		save_or_load(i, g_ePlayerData[i][SaveInfo], SL_LOAD_DATA)
+	}
+}
 public plugin_precache()
 {
 	new szModname[MAX_NAME_LENGTH]
@@ -1273,6 +1280,11 @@ save_or_load(const id, const szInfo[], const iType)
 		{
 			if(g_eSettings[USE_MYSQL])
 			{
+				if (g_iSqlTuple == Empty_Handle)
+				{		
+					return ;
+				}
+
 				if(!Loaded[id])
 					return;
 					
@@ -1301,6 +1313,11 @@ save_or_load(const id, const szInfo[], const iType)
 		{
 			if(g_eSettings[USE_MYSQL])
 			{
+				if (g_iSqlTuple == Empty_Handle)
+				{		
+					return ;
+				}
+
 				if(Loaded[id])
 					return;
 
@@ -1318,10 +1335,7 @@ save_or_load(const id, const szInfo[], const iType)
 
 				new szQuery[MAX_QUERY_LENGTH]
 				formatex(szQuery, charsmax(szQuery), "SELECT XP FROM `%s` WHERE Player = '%s';", g_eSettings[SQL_TABLE], szPlayer)
-
 				
-	
-	
 				SQL_ThreadQuery(g_iSqlTuple, "QueryLoadData", szQuery, iData, sizeof(iData))
 			}
 			else
@@ -1336,6 +1350,12 @@ save_or_load(const id, const szInfo[], const iType)
 
 public QueryLoadData(iFailState, Handle:iQuery, szError[], iErrorCode, iData[], iSize)
 {
+	if(iFailState != TQUERY_SUCCESS)
+	{
+		log_amx("[CRXRanks] SQL Error #%d - %s", iErrorCode, szError);
+		return ;
+	}
+
 	new id = iData[0]
 
 	if(Loaded[id])

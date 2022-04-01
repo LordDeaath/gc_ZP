@@ -40,7 +40,7 @@ public plugin_init()
 	register_srvcmd("zp_bank_connect", "db_connect");
 	
 	//register_srvcmd("zp_bank_clean", "CleanDataBase");
-	server_cmd("zp_bank_connect");
+	db_connect();
 }
 
 public plugin_precache()
@@ -82,14 +82,14 @@ public client_authorized(id)
 
 
 public LoadClientBank(id)
-{
-	if(Loaded[id])
-		return;
-
+{	
 	if (g_SqlTuple == Empty_Handle || g_Sql == Empty_Handle)
 	{		
 		return ;
 	}
+
+	if(Loaded[id])
+		return;
 	
 	new szData[2];
 	szData[1] = get_user_userid(id);
@@ -141,19 +141,12 @@ public LoadClient_QueryHandler(iFailState, Handle:hQuery, szError[], iErrnum, sz
 
 public client_disconnected(id)
 {
-	if ( g_Sql == Empty_Handle)
-		return ;
-	
-	
-	if( Loaded[id])
-		SaveClientBank(id);
-}
-
-public SaveClientBank(id)
-{
 	if (g_Sql == Empty_Handle)
 		return ;
 	
+	if(! Loaded[id])
+		return;
+		
 	new packs =zp_ammopacks_get(id);
 	
 	new name[32],authid[32];
@@ -281,7 +274,7 @@ public db_loadcurrent()
 	}
 }
 
-public db_connect(count)
+public db_connect()
 {	
 	new host[64], user[32], pass[32], db[128];
 	new get_type[13], set_type[12];
@@ -313,9 +306,7 @@ public db_connect(count)
 	if (g_Sql == Empty_Handle)
 	{
 		server_print("%s SQL Error #%d - %s", PLUGIN_PREFIX, errno, error);
-		
-		count += 1;
-		set_task(10.0, "db_connect", count);
+		set_task(10.0, "db_connect");
 		
 		return ;
 	}
@@ -325,11 +316,9 @@ public db_connect(count)
 	if (equali(set_type, "sqlite") && !sqlite_TableExists(g_Sql, g_Table)) SQL_QueryAndIgnore(g_Sql, "CREATE TABLE %s (auth VARCHAR(36) PRIMARY KEY, nickname VARCHAR(36) NOT NULL DEFAULT '', password VARCHAR(32) NOT NULL DEFAULT '', amount INTEGER DEFAULT 0, timestamp INTEGER NOT NULL DEFAULT 0)",g_Table);
 	else if (equali(set_type, "mysql")) SQL_QueryAndIgnore(g_Sql,"CREATE TABLE IF NOT EXISTS `%s` (`auth` VARCHAR(36) NOT NULL, nickname VARCHAR(36) NOT NULL DEFAULT '', `password` VARCHAR(32) NOT NULL DEFAULT '', `amount` INT(10) NOT NULL DEFAULT 0, `timestamp` INT(10) NOT NULL DEFAULT 0, PRIMARY KEY (`auth`) ) ENGINE=MyISAM DEFAULT CHARSET=utf8;", g_Table);
 	
-	//CleanDataBase();
-	if(count > 1)
-		db_loadcurrent();
+	db_loadcurrent();
 	
-	server_print("%s connected to: '%s://%s:****@%s/%s/%s'",PLUGIN_PREFIX, set_type, user, host, db, g_Table);
+	log_amx("Connected successfully!");
 }
 /*
 public CleanDataBase()
