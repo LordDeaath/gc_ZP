@@ -243,7 +243,7 @@ public plugin_init()
 	register_dictionary("RankSystem.txt")
 
 	register_event("DeathMsg", "OnPlayerKilled", "a")
-	register_event("SayText", "OnSayText", "a", "2=#Cstrike_Name_Change")
+	//register_event("SayText", "OnSayText", "a", "2=#Cstrike_Name_Change")
 
 	if(g_eSettings[HUDINFO_VISIBILITY] == VIS_DEAD_FREEZE_TIME)
 	{
@@ -771,7 +771,7 @@ public OnNameChange(id)
 {
 	if(!is_user_connected(id))
 	{
-		return
+		return FMRES_HANDLED;
 	}
 
 	new szName[MAX_NAME_LENGTH]
@@ -793,6 +793,7 @@ public OnNameChange(id)
 
 	update_vip_status(id)
 	unregister_forward(FM_ClientUserInfoChanged, g_fwdUserNameChanged, 1)
+	return FMRES_HANDLED;
 }
 
 public DisplayHUD(id)
