@@ -1,6 +1,6 @@
 #include <amxmodx>
 #include <fakemeta>
-//#include <zp50_fps>
+#include <zp50_fps>
 
 #define PLUGIN "Speedometer"
 #define VERSION "1.2"
@@ -75,8 +75,8 @@ public check_speed(id)
 			if(!is_user_connected(player))
 				continue;
 		
-			// if(zp_fps_get_user_flags(player)&FPS_SPEEDOMETER)
-			// 	continue;
+			if(zp_fps_get_user_flags(player)&FPS_SPEEDOMETER)
+				continue;
 			
 			if(plrSpeed[player])
 				continue;
