@@ -232,7 +232,7 @@ public native_vip_model_toggle(id)
 	{		
 		zp_colored_print(id, "Your^3 VIP Model^1 has been^3 Enabled^1!")
 		DisabledModel[id]=false;
-		if(zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
+		if(is_user_alive(id)&&zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
 		{
 			new player_model[PLAYERMODEL_MAX_LENGTH]
 			ArrayGetString(g_models_vip_zombie_player, random_num(0, ArraySize(g_models_vip_zombie_player) - 1), player_model, charsmax(player_model))
@@ -243,7 +243,7 @@ public native_vip_model_toggle(id)
 	{
 		zp_colored_print(id, "Your^3 VIP Model^1 has been^3 Disabled^1!")
 		DisabledModel[id]=true;
-		if(zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
+		if(is_user_alive(id)&&zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
 		{			
 			if((get_user_flags(id) & read_flags(g_access_admin_models)))
 			{
@@ -289,7 +289,7 @@ public native_vip_glow_toggle(id)
 	{		
 		zp_colored_print(id, "Your^3 Zombie VIP Special Glow^1 has been^3 Enabled^1!")		
 		EnabledGlow[id]=true
-		if(zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
+		if(is_user_alive(id)&&zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
 		{
 			Glow[id]=true;
 			//set_user_rendering(id, kRenderFxGlowShell, 0, 255, 0, kRenderNormal, 15)
@@ -299,7 +299,7 @@ public native_vip_glow_toggle(id)
 	{					
 		zp_colored_print(id, "Your^3 Zombie VIP Special Glow^1 has been^3 Disabled^1!")
 		EnabledGlow[id]=false;
-		if(zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
+		if(is_user_alive(id)&&zp_core_is_zombie(id)&&!zp_class_nemesis_get(id)&&!zp_class_dragon_get(id)&&!zp_class_nightcrawler_get(id)&&!zp_class_predator_get(id))
 		{
 			Glow[id]=false;
 			set_user_rendering(id)	
@@ -386,7 +386,7 @@ public native_admin_model_toggle(id)
 		zp_admin_human_skin_set(id, 1);		
 	}
 
-	if(zp_core_is_zombie(id))
+	if(is_user_alive(id)&&zp_core_is_zombie(id))
 	{
 		// Skip for Nemesis
 		if (LibraryExists(LIBRARY_NEMESIS, LibType_Library) && zp_class_nemesis_get(id))
