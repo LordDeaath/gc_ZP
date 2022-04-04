@@ -582,8 +582,8 @@ public zp_fw_gamemodes_start()
 	PlaySound(0, sound)
 
 	Ativar_Alien();
-	server_cmd("mp_auto_join_team 1");
-	server_cmd("humans_join_team CT");
+	// server_cmd("mp_auto_join_team 1");
+	// server_cmd("humans_join_team CT");
 	server_cmd("mp_round_infinite bcdefg");		
 	server_cmd("amx_spawnprotect 1")
 	server_cmd("amx_spawnprotect_glow 1")
@@ -645,7 +645,7 @@ public zp_fw_gamemodes_end()
 		FluxSpr=0;
 	}
 	
-	server_cmd("humans_join_team any");
+	// server_cmd("humans_join_team any");
 	server_cmd("mp_round_infinite 0");	
 	server_cmd("amx_spawnprotect 0")
 	server_cmd("amx_spawnprotect_glow 0")
