@@ -36,8 +36,8 @@ public CmdStart(id, uc_handle, seed)
 	if(!is_user_alive(id))
 		return;
 		
-	if(plrSpeed[id])
-		return;
+	//if(plrSpeed[id])
+	//	return;
 
 	// if( !(pev(id, pev_flags) & FL_ONGROUND))return;
 	
@@ -50,8 +50,8 @@ public CmdStart(id, uc_handle, seed)
 
 public check_speed(id)
 {		
-	if(!is_user_alive(id))
-		return;	
+	/*if(!is_user_alive(id))
+		return;*/
 		
 	static Float:velocity[3]
 	pev(id, pev_velocity, velocity)
