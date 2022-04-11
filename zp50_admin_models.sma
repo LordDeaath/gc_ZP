@@ -64,6 +64,7 @@ public plugin_init()
 	register_clcmd("say /zglow","native_vip_glow_toggle")	
 	register_clcmd("say /skin","native_admin_model_toggle")
 	RegisterHam(Ham_Killed, "player", "fw_Killed")
+	RegisterHam(Ham_Killed, "player", "fw_KilledPost",1)
 	set_task(0.1,"GlowTask",0,"",0,"b")
 }
 public plugin_precache()
@@ -344,7 +345,6 @@ public zp_fw_core_cure_post(id)
 
 public fw_Killed(id) 
 {
-	Glow[id]=false;
 	//VIP Zombie with Skin
 	if(zp_core_is_zombie(id)&&(zv_get_user_flags(id)&ZV_MAIN)&&!DisabledModel[id])
 	{
@@ -353,6 +353,10 @@ public fw_Killed(id)
 	}
 }
 
+public fw_KilledPost(id)
+{
+	Glow[id]=false;
+}
     
 public client_disconnected(id)
 {
