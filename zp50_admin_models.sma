@@ -63,7 +63,7 @@ public plugin_init()
 	register_clcmd("say /zskin","native_vip_model_toggle")
 	register_clcmd("say /zglow","native_vip_glow_toggle")	
 	register_clcmd("say /skin","native_admin_model_toggle")
-	RegisterHam(Ham_Killed, "player", "fw_Killed", 1)
+	RegisterHam(Ham_Killed, "player", "fw_Killed")
 	set_task(0.1,"GlowTask",0,"",0,"b")
 }
 public plugin_precache()
