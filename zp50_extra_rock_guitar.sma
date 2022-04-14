@@ -262,7 +262,7 @@ public zp_fw_items_select_pre(id, itemid)
 	if(Purchases>MyAkLimit)
 		return ZP_ITEM_NOT_AVAILABLE;
 
-	zp_items_menu_text_add("[0/1]")
+	//zp_items_menu_text_add("[0/1]")
 	return ZP_ITEM_AVAILABLE;
 }
 AlivCount()
