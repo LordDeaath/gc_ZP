@@ -26,7 +26,7 @@
 native zp_is_nvg_active(id);
 native zp_apocalypse_icon_set();
 native zp_nade_bought();
-native zv_get_bought(id);
+// native zv_get_bought(id);
 native zp_items_bought_get(id);
 
 new NvgCounter;
@@ -91,7 +91,7 @@ public zp_fw_items_select_pre(id, itemid)
 	
 	if(!(get_user_flags(id)&ADMIN_KICK)&&!(zv_get_user_flags(id)&ZV_MAIN))
 	{
-		zp_items_menu_text_add("\y[ADMIN/VIP]")
+		zp_items_menu_text_add("\r[ADMIN/VIP]")
 		return ZP_ITEM_NOT_AVAILABLE;
 	}
 
@@ -166,7 +166,7 @@ public BeginApocalypse()
 		continue;
 		if(!zp_core_is_zombie(i))
 		{
-			bought=zp_items_bought_get(i)+zv_get_bought(i);
+			bought=zp_items_bought_get(i)//+zv_get_bought(i);
 			if(bought)
 			{
 				zp_ammopacks_set(i, zp_ammopacks_get(i)+bought)
