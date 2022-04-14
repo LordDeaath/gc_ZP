@@ -291,6 +291,8 @@ public zp_fw_gamemodes_end()
 {
 	for(new i=1;i<33;i++)
 	{
+		if(!is_user_alive(i))
+			continue;
 		zp_ammopacks_set(i, zp_ammopacks_get(i)+10)
 	}
 
