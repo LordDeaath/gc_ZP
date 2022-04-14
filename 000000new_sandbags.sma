@@ -12,8 +12,6 @@
 #include <colorchat>
 #include <zp50_main>
 #include <beams>
-#include <zmvip>
-
 native zp_show_reward(id, amount, const reason[32])
 
 #define TEST
@@ -62,12 +60,13 @@ new g_bolsas[33];
 
 const g_item_bolsas = 30 
 new g_itemid_bolsas
-new g_itemid_bolsas_vip
+//new g_itemid_bolsas_vip
 new cvar_health,cvar_health_vip;
 new g_iMaxPlayers;
 new iSandBagHealth[33]
 //new iTeamLimit, gAlreadyBought[33] ,g_RoundLimit;
-new Bought[33];
+new bool:Bought[33];
+new bool:BoughtVIP[33]
 new g_pSB[33], g_pBeam[33], iSBCanBePlaced[33]
 new Float:ivecOrigin[3]
 
@@ -86,7 +85,7 @@ public plugin_init()
 	
 	register_plugin("[ZP] Extra: SandBags", "1.1", "LARP") 
 	g_itemid_bolsas = zp_items_register("Sandbags","", 30, 0, 0) 
-	g_itemid_bolsas_vip= zv_register_extra_item("Sandbags","FREE",0,ZV_TEAM_HUMAN)
+	// g_itemid_bolsas_vip= zv_register_extra_item("Sandbags","FREE",0,ZV_TEAM_HUMAN)
 	/* Register the cvars */ 
 	remove_nrnd = register_cvar("zp_pb_remround","1"); 
 	cvar_health=register_cvar("zp_sandbag_health","585")
@@ -223,6 +222,13 @@ public show_the_menu(id)
 	if(zp_class_survivor_get(id))return PLUGIN_HANDLED;
 	if(!g_bolsas[id])
 	{		
+		if(Bought[id]&&!(zv_get_user_flags(id)&ZV_MAIN))
+		{
+			ColorChat(id, GREEN, "[GC]^1 Buy^3 VIP^1 at^3 GamerClub.NeT^1 for^3 Increased Item Limits!")
+			// show_the_menu2(id);
+			return PLUGIN_HANDLED;
+		}
+
 		zp_items_force_buy(id, g_itemid_bolsas)
 	}
 	else
@@ -237,11 +243,22 @@ public show_the_menu2(id)
 	if(!is_user_alive(id))return
 	if(zp_core_is_zombie(id))return
 	if(zp_class_survivor_get(id))return;
-	new Menu = menu_create("\rSandbags \yMenu", "menu_command")
+	new Menu = menu_create("\y[GC]\w Sandbags", "menu_command")
 	new text[32]
 	if(!g_bolsas[id])
 	{	
-		formatex(text,charsmax(text),"\dBuy a Sandbag [0/1]")
+		if(zv_get_user_flags(id)&ZV_MAIN)
+		{
+			if(Bought[id])
+			{
+				formatex(text,charsmax(text),"Buy a Sandbag\y %d\w [1/2] ",2*zp_items_get_cost(g_itemid_bolsas))
+			}
+		}
+		else
+		{	
+			if(Bought[id])		
+			formatex(text,charsmax(text),"\dBuy a Sandbag [1/2]\r [VIP]")
+		}
 		menu_additem(Menu,text,"",0)
 	}
 	else
@@ -280,9 +297,9 @@ public menu_command(id, menu, item)
 						ColorChat(id,GREEN,"[GC]^03 You do not have enough sandbags to place sandbags!") 
 						return PLUGIN_CONTINUE 
 						}
-						g_bolsas[id]-= 1 
+						g_bolsas[id]--
 						place_palletwbags(id); 
-						if(g_bolsas[id]||!Bought[id])
+						if(g_bolsas[id]||((zv_get_user_flags(id)&ZV_MAIN)&&!BoughtVIP[id]))
 						show_the_menu2(id); 
 					}
 					else ColorChat(id,GREEN,"[GC]^03 Sandbags cannot be used in this mode")
@@ -448,7 +465,7 @@ public place_palletwbags(id)
 	#endif
 	set_pev(Ent,pev_solid,SOLID_BBOX); // touch on edge, block 
 
-	if(zpv_is_user_vip(id)) set_rendering ( Ent, kRenderFxGlowShell, 0, 0, 255, kRenderNormal, 16)
+	if(zv_get_user_flags(id)&ZV_MAIN) set_rendering ( Ent, kRenderFxGlowShell, 0, 0, 255, kRenderNormal, 16)
 	else set_rendering (Ent, kRenderFxGlowShell, 0, 255, 0, kRenderNormal, 16)
 	
 	set_pev(Ent,pev_movetype,MOVETYPE_FLY); // no gravity, but still collides with stuff 
@@ -525,6 +542,7 @@ public event_newround()
 		remove_allpalletswbags(); 
 		g_bolsas[id] = 0  
 		Bought[id] = false;
+		BoughtVIP[id] = false
 		DamageDealt[id] = 0.0
 		
 		if (g_pBeam[id] && is_valid_ent(g_pBeam[id]))
@@ -545,6 +563,34 @@ stock remove_allpalletswbags()
 	while((pallets = fm_find_ent_by_class(pallets, "amxx_pallets"))) 
 	fm_remove_entity(pallets); 
 } 
+
+public plugin_natives()
+{
+	register_native("zp_bought_vip_item_get", "native_bought_vip_item_get",1)
+	register_native("zp_bought_vip_item_set", "native_bought_vip_item_set",1)
+	register_native("zp_sandbags_set_cost","native_sandbags_set_cost")	
+}
+
+public native_sandbags_set_cost(plugin,params)
+{
+	if(get_param(3)!=g_itemid_bolsas)
+		return false;	
+
+	if(Bought[get_param(1)])
+	set_param_byref(2, 2 * get_param_byref(2))
+
+	return true;
+}
+
+public native_bought_vip_item_get(id)
+{
+	return BoughtVIP[id]
+}
+
+public native_bought_vip_item_set(id)
+{
+	BoughtVIP[id] = true;
+}
 
 public plugin_cfg()
 {
@@ -570,11 +616,37 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 	if (current_mode != g_GameModeInfectionID && current_mode != g_GameModeMultiID)
 		return ZP_ITEM_DONT_SHOW;	
 	
-	if(Bought[id])
-		return ZP_ITEM_NOT_AVAILABLE
 	
+	if(zv_get_user_flags(id)&ZV_MAIN)
+	{
+		if(Bought[id])
+		{				
+			if(BoughtVIP[id])
+			{					
+				return ZP_ITEM_NOT_AVAILABLE;
+			}
+			
+			zp_items_menu_text_add("[1/2]")
+			return ZP_ITEM_AVAILABLE;
+		}
+		
+		if(BoughtVIP[id])
+		zp_items_menu_text_add("[0/1]")
+		else
+		zp_items_menu_text_add("[0/2]")
+		return ZP_ITEM_AVAILABLE
+	}
+
+	if(Bought[id])
+	{
+		zp_items_menu_text_add("[1/2] \r[VIP]")
+		return ZP_ITEM_NOT_AVAILABLE;
+	}
+	
+	zp_items_menu_text_add("[0/1]")
 	return ZP_ITEM_AVAILABLE;
 }
+
 public zp_fw_items_select_post(id, itemid, ignorecost)
 {
 	// This is not our item
@@ -587,34 +659,37 @@ public zp_fw_items_select_post(id, itemid, ignorecost)
 	
 	//gAlreadyBought[id] = 1
 	//iTeamLimit++
+	if(!Bought[id])
 	Bought[id]=true;
+	else
+	BoughtVIP[id]=true;
 	show_the_menu2(id)
 	//client_print(id, print_chat, "[ZP] You have %i sandbags, to use type 'say / sb'", g_bolsas[id]) 
-	if(zpv_is_user_vip(id))
+	if(zv_get_user_flags(id)&ZV_MAIN)
 	iSandBagHealth[id] = get_pcvar_num(cvar_health_vip)
 	else
 	iSandBagHealth[id] = get_pcvar_num(cvar_health)
 }
 
-public zv_extra_item_selected(id, itemid)
-{
-	// This is not our item
-	if (itemid != g_itemid_bolsas_vip)
-	return;
-	g_bolsas[id]+=2;
-	//Counter[id]=60;
-	//remove_task(id)
-	//set_task(1.0,"CheckIfPlaced",id,"",0,"b")
+// public zv_extra_item_selected(id, itemid)
+// {
+// 	// This is not our item
+// 	if (itemid != g_itemid_bolsas_vip)
+// 	return;
+// 	g_bolsas[id]+=2;
+// 	//Counter[id]=60;
+// 	//remove_task(id)
+// 	//set_task(1.0,"CheckIfPlaced",id,"",0,"b")
 	
-	//gAlreadyBought[id] = 1
-	//iTeamLimit++
-	show_the_menu2(id)
-	//client_print(id, print_chat, "[ZP] You have %i sandbags, to use type 'say / sb'", g_bolsas[id]) 
-	if(zpv_is_user_vip(id))
-	iSandBagHealth[id] = get_pcvar_num(cvar_health_vip)
-	else
-	iSandBagHealth[id] = get_pcvar_num(cvar_health)
-}
+// 	//gAlreadyBought[id] = 1
+// 	//iTeamLimit++
+// 	show_the_menu2(id)
+// 	//client_print(id, print_chat, "[ZP] You have %i sandbags, to use type 'say / sb'", g_bolsas[id]) 
+// 	if(zv_get_user_flags(id)&ZV_MAIN)
+// 	iSandBagHealth[id] = get_pcvar_num(cvar_health_vip)
+// 	else
+// 	iSandBagHealth[id] = get_pcvar_num(cvar_health)
+// }
 
 public CheckIfPlaced(id)
 {
@@ -900,15 +975,6 @@ FClassnameIs(this, const szClassName[])
 	pev(this, pev_classname, szpClassName, charsmax(szpClassName));
 
 	return equal(szClassName, szpClassName);
-}
-
-public zpv_is_user_vip(id)
-{
-	if(zv_get_user_flags(id)&ZV_MAIN)
-	{
-		return true;
-	}
-	return false;
 }
 
 /*

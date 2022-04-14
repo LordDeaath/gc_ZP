@@ -26,6 +26,9 @@
 #include <zp50_class_knifer>
 #include <zp50_class_plasma>
 
+native zp_bought_vip_item_get(id)
+native zp_bought_vip_item_set(id)
+
 #define DMG_GRENADE                     (1<<24)     // Counter-Strike only - Hit by HE grenade
 
 #if AMXX_VERSION_NUM < 180
@@ -122,7 +125,7 @@ new Float:ivecOrigin[3]
 new const SB_CLASSNAME[] = "FakeLasermine"
 new gMsgBarTime;
 new g_iMaxPlayers;
-new g_LME_vip;
+// new g_LME_vip;
 new Bought[33];
 
 new bool:Colors;
@@ -157,7 +160,7 @@ public plugin_init()
 	register_cvar("[DS] Lasermine", "3.0", FCVAR_SERVER|FCVAR_SPONLY)
 
 	g_LME = zp_items_register("Laser Mine","", 15, 0,1)
-	g_LME_vip = zv_register_extra_item("Laser Mine", "FREE",0,ZV_TEAM_HUMAN);
+	// g_LME_vip = zv_register_extra_item("Laser Mine", "FREE",0,ZV_TEAM_HUMAN);
 	register_forward(FM_OnFreeEntPrivateData, "OnFreeEntPrivateData");
 	g_iMaxPlayers = get_maxplayers();
 	register_think(SB_CLASSNAME, "SB_Think");
@@ -169,6 +172,21 @@ public plugin_init()
 	{
 		Colors = true;
 	}
+}
+
+public plugin_natives()
+{
+	register_native("zp_lasermine_set_cost","native_lasermine_set_cost")	
+}
+public native_lasermine_set_cost(plugin,params)
+{
+	if(get_param(3)!=g_LME)
+		return false;	
+
+	if(Bought[get_param(1)])
+	set_param_byref(2, 2 * get_param_byref(2))
+
+	return true;
 }
 
 public Player_Death(victim)
@@ -291,7 +309,7 @@ public Lasermenu_LgK( id )
 	if(zp_core_is_zombie(id))
 		return PLUGIN_HANDLED;
 		
-	new menu_id = menu_create("[GC | Lasermine]","lgk_lm_handler")
+	new menu_id = menu_create("\y[GC]\w Lasermine","lgk_lm_handler")
 	if(!g_havemine[id]&&!g_deployed[id])
 	{
 		zp_items_force_buy(id, g_LME);
@@ -307,12 +325,33 @@ public Lasermenu_LgK( id )
 	else
 	if(Bought[id])
 	{
-		formatex(text,charsmax(text),"\dBuy a Lasermine [1/1]")
+		if(zv_get_user_flags(id)&ZV_MAIN)
+		{
+			if(zp_bought_vip_item_get(id))
+			{
+				formatex(text,charsmax(text),"\dBuy a Lasermine")
+			}
+			else
+			{
+				formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [1/2]",2*zp_items_get_cost(g_LME))
+			}
+		}
+		else
+		{			
+			formatex(text,charsmax(text),"\dBuy a Lasermine [1/2]\r [VIP]")
+		}
 		menu_additem(menu_id,text,"",0)
 	}
 	else
 	{
-		formatex(text,charsmax(text),"Buy a Lasermine [0/1]")
+		if(zv_get_user_flags(id)&ZV_MAIN)
+		{
+			formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [0/2]",zp_items_get_cost(g_LME))
+		}
+		else
+		{
+			formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [0/1]",zp_items_get_cost(g_LME))
+		}
 		menu_additem(menu_id,text,"",0)
 	}
 	
@@ -332,7 +371,7 @@ public Lasermenu_LgK2( id )
 	if(zp_core_is_zombie(id))
 		return;
 		
-	new menu_id = menu_create("[GC | Lasermine]","lgk_lm_handler")
+	new menu_id = menu_create("\y[GC]\w Lasermine","lgk_lm_handler")
 	new text[34]
 	if(g_havemine[id])
 	{
@@ -343,12 +382,33 @@ public Lasermenu_LgK2( id )
 	else	
 	if(Bought[id])
 	{
-		formatex(text,charsmax(text),"\dBuy a Lasermine [1/1]")
+		if(zv_get_user_flags(id)&ZV_MAIN)
+		{
+			if(zp_bought_vip_item_get(id))
+			{
+				formatex(text,charsmax(text),"\dBuy a Lasermine")
+			}
+			else
+			{
+				formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [1/2]",2*zp_items_get_cost(g_LME))
+			}
+		}
+		else
+		{			
+			formatex(text,charsmax(text),"\dBuy a Lasermine [1/2]\r [VIP]")
+		}
 		menu_additem(menu_id,text,"",0)
 	}
 	else
 	{
-		formatex(text,charsmax(text),"Buy a Lasermine [0/1]")
+		if(zv_get_user_flags(id)&ZV_MAIN)
+		{
+			formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [0/2]",zp_items_get_cost(g_LME))
+		}
+		else
+		{
+			formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [0/1]",zp_items_get_cost(g_LME))
+		}
 		menu_additem(menu_id,text,"",0)
 	}
 	
@@ -389,8 +449,9 @@ public lgk_lm_handler( id, menu, item )
 				else
 				if(zp_gamemodes_get_current()!=ZP_NO_GAME_MODE)
 				{								
-					Spawn(id)					
-					//Lasermenu_LgK2(id)					
+					Spawn(id)		
+					if(zv_get_user_flags(id)&&(g_havemine[id]||!zp_bought_vip_item_get(id)))
+					Lasermenu_LgK2(id);
 				}
 				else
 				ColorChat(id, GREEN,"[GC]^03Lasermines can be placed only in infection modes.")	
@@ -399,6 +460,13 @@ public lgk_lm_handler( id, menu, item )
 			if((zp_items_get_purchases(g_LME)>=zp_items_get_limit(g_LME)&&zp_items_get_limit(g_LME))||((zp_items_get_player_purchases(g_LME,id)>=zp_items_get_player_limit(g_LME)&&zp_items_get_player_limit(g_LME)))&&(zpv_is_user_vip(id)&&zp_items_get_player_purchases(g_LME,id)>=zp_items_get_vip_limit(g_LME)&&zp_items_get_vip_limit(g_LME)))
 			{				
 				Lasermenu_LgK2(id);
+			}
+			else
+			if(Bought[id]&&!(zv_get_user_flags(id)&ZV_MAIN))
+			{
+				ColorChat(id, GREEN, "[GC]^1 Buy^3 VIP^1 at^3 GamerClub.NeT^1 for^3 Increased Item Limits!")
+				Lasermenu_LgK2(id);
+				return PLUGIN_HANDLED;
 			}
 			else
 			{
@@ -410,7 +478,7 @@ public lgk_lm_handler( id, menu, item )
 			Destroy(id)
 			//client_cmd(id,"+dellaser")
 			ReturnMine(id)	
-			Lasermenu_LgK(id);	
+			Lasermenu_LgK2(id);	
 		}
 		case MENU_EXIT:
 			Destroy(id)		
@@ -1178,24 +1246,24 @@ public RemoveDistance(id)
 	if(ipDistance[id] <= 100)
 		ipDistance[id] = 100
 }*/
-public zv_extra_item_selected(id, itemid)
-{
-	if (itemid != g_LME_vip)
-	return;
+// public zv_extra_item_selected(id, itemid)
+// {
+// 	if (itemid != g_LME_vip)
+// 	return;
 	
 		
-	if(zpv_is_user_vip(id))
-	iLaserMineHealth[id][g_havemine[id]] = get_pcvar_float(g_LHEALTH_VIP)
-	else
-		iLaserMineHealth[id][g_havemine[id]] = get_pcvar_float(g_LHEALTH)
+// 	if(zpv_is_user_vip(id))
+// 	iLaserMineHealth[id][g_havemine[id]] = get_pcvar_float(g_LHEALTH_VIP)
+// 	else
+// 		iLaserMineHealth[id][g_havemine[id]] = get_pcvar_float(g_LHEALTH)
 		
-	g_havemine[id]++;
+// 	g_havemine[id]++;
 	
-	ColorChat(id, GREEN,"[GC]^03You just bought a ^04Laser Mine^03. Type ^04/lm^03 to open this menu again.")
-	emit_sound(id, CHAN_ITEM, ENT_SOUND5, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
+// 	ColorChat(id, GREEN,"[GC]^03You just bought a ^04Laser Mine^03. Type ^04/lm^03 to open this menu again.")
+// 	emit_sound(id, CHAN_ITEM, ENT_SOUND5, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
 	
-	Lasermenu_LgK(id)
-}
+// 	Lasermenu_LgK(id)
+// }
 
 public zp_fw_items_select_pre(id, itemid, ignorecost)
 {
@@ -1214,9 +1282,33 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 	new current_mode = zp_gamemodes_get_current()
 	if (current_mode==Swarm||current_mode==Plague||current_mode == g_GameModeArma||current_mode == Nemesis||current_mode == Dragon||current_mode == Nightcrawler||current_mode == Predator||zp_gamemodes_get_current()==ZP_NO_GAME_MODE)
 		return ZP_ITEM_DONT_SHOW;
-	
+		
+	if(zv_get_user_flags(id)&ZV_MAIN)
+	{
+		if(Bought[id])
+		{				
+			if(zp_bought_vip_item_get(id))
+			{					
+				return ZP_ITEM_NOT_AVAILABLE;
+			}
+			
+			zp_items_menu_text_add("[1/2]")
+			return ZP_ITEM_AVAILABLE;
+		}
+		if(zp_bought_vip_item_get(id))
+		zp_items_menu_text_add("[0/1]")
+		else
+		zp_items_menu_text_add("[0/2]")
+		return ZP_ITEM_AVAILABLE
+	}
+
 	if(Bought[id])
-		return ZP_ITEM_NOT_AVAILABLE
+	{
+		zp_items_menu_text_add("[1/2] \r[VIP]")
+		return ZP_ITEM_NOT_AVAILABLE;
+	}
+	
+	zp_items_menu_text_add("[0/1]")
 		
 	return ZP_ITEM_AVAILABLE;
 }
@@ -1232,7 +1324,14 @@ public zp_fw_items_select_post(id, itemid, ignorecost)
 	iLaserMineHealth[id][g_havemine[id]] = get_pcvar_float(g_LHEALTH)
 		
 	g_havemine[id]++;
-	Bought[id]=true;
+	if(Bought[id])
+	{
+		zp_bought_vip_item_set(id)
+	}
+	else
+	{
+		Bought[id]=true;
+	}
 	
 	ColorChat(id, GREEN,"[GC]^03You just bought a ^04Laser Mine^03. Type ^04/lm^03 to open this menu again.")
 	emit_sound(id, CHAN_ITEM, ENT_SOUND5, VOL_NORM, ATTN_NORM, 0, PITCH_NORM)
