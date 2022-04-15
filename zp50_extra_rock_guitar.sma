@@ -52,7 +52,8 @@ new const SHOT_SOUND[] = "weapons/rguitar.wav";
 native drop_violin(id);
 native zp_class_hunter_get(id);
 
-new g_itemid , g_itemid_vip, g_has_guitar[33] , g_hamczbots , g_clip_ammo[33] , g_has_zoom[33] , blood_spr[2] , cvar_rockguitar_damage_x , cvar_rockguitar_clip , cvar_rockguitar_bpammo , cvar_rockguitar_shotspd , cvar_rockguitar_oneround , cvar_botquota;
+new g_itemid// , g_itemid_vip
+new g_has_guitar[33] , g_hamczbots , g_clip_ammo[33] , g_has_zoom[33] , blood_spr[2] , cvar_rockguitar_damage_x , cvar_rockguitar_clip , cvar_rockguitar_bpammo , cvar_rockguitar_shotspd , cvar_rockguitar_oneround , cvar_botquota;
 
 new g_TmpClip[33]
 
@@ -73,7 +74,7 @@ public plugin_init()
 	// Extra Item Register
 	g_itemid = zp_items_register(ITEM_NAME, "bla",ITEM_COST);
 
-	g_itemid_vip = zv_register_extra_item("Electric Guitar", "20 Ammo Packs",20,ZV_TEAM_HUMAN);
+	//g_itemid_vip = zv_register_extra_item("Electric Guitar", "20 Ammo Packs",20,ZV_TEAM_HUMAN);
 	// Cvars Register
 	cvar_rockguitar_damage_x = register_cvar("zp_rockguitar_damage_x", "3.5");
 	cvar_rockguitar_clip = register_cvar("zp_rockguitar_clip", "40");
@@ -243,7 +244,7 @@ public zp_fw_items_select_pre(id, itemid)
 
 	if(!(zv_get_user_flags(id)&ZV_MAIN)&&!(get_user_flags(id)&ADMIN_KICK))
 	{
-		zp_items_menu_text_add("\r(VIP/ADMIN)")
+		zp_items_menu_text_add("\r[ADMIN/VIP]")
 		return ZP_ITEM_NOT_AVAILABLE
 	}
 
@@ -277,23 +278,23 @@ AlivCount()
 	return AlivePlayers;
 }
 
-public zv_extra_item_selected(player, itemid)
-{
-	if(itemid != g_itemid_vip)
-		return;
+// public zv_extra_item_selected(player, itemid)
+// {
+// 	if(itemid != g_itemid_vip)
+// 		return;
 	
-	drop_violin(player);
-	if(user_has_weapon(player, CSW_GALIL))
-	{
-		drop_primary(player);
-	}
-	g_has_guitar[player] = true;
-	new wpnid = give_item(player, "weapon_galil");
-	zp_colored_print(player, "You bought an^3 Electric Guitar");
-	cs_set_weapon_ammo(wpnid, get_pcvar_num(cvar_rockguitar_clip));
-	cs_set_user_bpammo(player, CSW_GALIL, get_pcvar_num(cvar_rockguitar_bpammo));	
-	engclient_cmd(player, "weapon_galil");
-}
+// 	drop_violin(player);
+// 	if(user_has_weapon(player, CSW_GALIL))
+// 	{
+// 		drop_primary(player);
+// 	}
+// 	g_has_guitar[player] = true;
+// 	new wpnid = give_item(player, "weapon_galil");
+// 	zp_colored_print(player, "You bought an^3 Electric Guitar");
+// 	cs_set_weapon_ammo(wpnid, get_pcvar_num(cvar_rockguitar_clip));
+// 	cs_set_user_bpammo(player, CSW_GALIL, get_pcvar_num(cvar_rockguitar_bpammo));	
+// 	engclient_cmd(player, "weapon_galil");
+// }
 
 public zp_fw_items_select_post(player, itemid)
 {
