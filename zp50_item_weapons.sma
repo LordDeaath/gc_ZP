@@ -164,7 +164,7 @@ public native_grenades_set_cost(plugin,params)
 	
 	if(equal(weapon_item,"weapon_hegrenade"))
 	{
-		set_param_byref(2, floatround((1.0+float((NapalmPurchases[get_param(1)]<4?NapalmPurchases[get_param(1)]:4))/2) * float(get_param_byref(2))))
+		set_param_byref(2, (2+(NapalmPurchases[get_param(1)]<4?NapalmPurchases[get_param(1)]:4)) * get_param_byref(2)/2)
 	}
 	else
 	if(equal(weapon_item,"weapon_flashbang"))

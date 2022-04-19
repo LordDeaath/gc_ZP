@@ -35,7 +35,7 @@ public native_brains_set_cost(plugin,params)
 	if(get_param(3)!=gItemHealth)
 		return false;	
 
-	set_param_byref(2, floatround((1.0+float((Purchases[get_param(1)]<2?Purchases[get_param(1)]:2))/2) * float(get_param_byref(2))))
+	set_param_byref(2,(2+(Purchases[get_param(1)]<2?Purchases[get_param(1)]:2)) * get_param_byref(2)/2)
 	return true;
 }
 

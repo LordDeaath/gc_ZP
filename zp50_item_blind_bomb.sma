@@ -125,7 +125,7 @@ public native_blind_set_cost(plugin,params)
     if(get_param(3)!=g_blind)
         return false;	
 
-    set_param_byref(2, ((Purchases[get_param(1)]<2?Purchases[get_param(1)]:2)+1) * get_param_byref(2))
+    set_param_byref(2, ((Purchases[get_param(1)]<2?Purchases[get_param(1)]:2)+2) * get_param_byref(2)/2)
 
     return true;
 }

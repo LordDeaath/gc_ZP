@@ -251,7 +251,7 @@ public show_the_menu2(id)
 		{
 			if(Bought[id])
 			{
-				formatex(text,charsmax(text),"Buy a Sandbag\y %d\w [1/2] ",2*zp_items_get_cost(g_itemid_bolsas))
+				formatex(text,charsmax(text),"Buy a Sandbag\y %d\w [1/2] ",3*zp_items_get_cost(g_itemid_bolsas)/2)
 			}
 		}
 		else
@@ -577,7 +577,7 @@ public native_sandbags_set_cost(plugin,params)
 		return false;	
 
 	if(Bought[get_param(1)])
-	set_param_byref(2, 2 * get_param_byref(2))
+		set_param_byref(2, get_param_byref(2) + get_param_byref(2)/2)
 
 	return true;
 }

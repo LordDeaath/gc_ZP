@@ -17,6 +17,9 @@
 #include <zmvip>
 #include <zp50_ammopacks>
 
+native zp_bought_vip_item_get(id)
+native zp_bought_vip_item_set(id)
+
 const MAXPLAYERS = 32;
 
 #define SetPlayerBit(%1,%2)		(%1 |= (1<<(%2&31)))
@@ -38,7 +41,8 @@ new g_fViewEntCar;
 
 new Inventory[33],Parked[33];
 //new CapCount;
-new g_iItemId, g_itemid_vip, explosion, rc_radius,cvar_health,cvar_health_vip,cvar_damage;
+new g_iItemId//, g_itemid_vip
+new explosion, rc_radius,cvar_health,cvar_health_vip,cvar_damage;
 
 new MenuID;
 new Float:DamageDealt[33]
@@ -60,7 +64,7 @@ public plugin_init()
 
 	g_iItemId = zp_items_register("Remote Controlled Bomb", "Blow up zombies", 45, 5, 1)
 	
-	g_itemid_vip = zv_register_extra_item("Remote Controlled Bomb", "FREE",0,ZV_TEAM_HUMAN);
+	// g_itemid_vip = zv_register_extra_item("Remote Controlled Bomb", "FREE",0,ZV_TEAM_HUMAN);
 //	g_iVIPItemId = zpv_items_register("RC-Bomb", 25, 1);
 
 	register_event("HLTV", "Event_NewRound", "a", "1=0", "2=0");
@@ -140,6 +144,18 @@ public plugin_precache()
 public plugin_natives()
 {
 	register_native("free_rc", "giveRC", 1)
+	register_native("zp_rc_set_cost","native_rc_set_cost")	
+}
+
+public native_rc_set_cost(plugin,params)
+{
+	if(get_param(3)!=g_iItemId)
+		return false;	
+
+	if(Bought[get_param(1)])
+	set_param_byref(2, 3 * get_param_byref(2)/2)
+
+	return true;
 }
 public client_disconnecteded(this)
 {
@@ -170,12 +186,35 @@ public zp_fw_items_select_pre(this, iItemId)
 	if (zp_core_is_zombie(this))
 		return ZP_ITEM_DONT_SHOW;
 	
-	if(Bought[this])
-		return ZP_ITEM_NOT_AVAILABLE;
-
 	if (g_pCar[this] && is_valid_ent(g_pCar[this]))
 		return ZP_ITEM_NOT_AVAILABLE;
 
+	if(zv_get_user_flags(this)&ZV_MAIN)
+	{
+		if(Bought[this])
+		{				
+			if(zp_bought_vip_item_get(this))
+			{					
+				return ZP_ITEM_NOT_AVAILABLE;
+			}
+			
+			zp_items_menu_text_add("[1/2]")
+			return ZP_ITEM_AVAILABLE;
+		}
+		if(zp_bought_vip_item_get(this))
+		zp_items_menu_text_add("[0/1]")
+		else
+		zp_items_menu_text_add("[0/2]")
+		return ZP_ITEM_AVAILABLE
+	}
+
+	if(Bought[this])
+	{
+		zp_items_menu_text_add("[1/2] \r[VIP]")
+		return ZP_ITEM_NOT_AVAILABLE;
+	}
+	
+	zp_items_menu_text_add("[0/1]")
 	return ZP_ITEM_AVAILABLE;
 }
 public giveRC(id)
@@ -189,21 +228,24 @@ public zp_fw_items_select_post(this, iItemId)
 	if (iItemId != g_iItemId)
 		return;
 	
+	if(!Bought[this])
 	Bought[this]=true;
+	else
+	zp_bought_vip_item_set(this)
 	Inventory[this]++;
 	RC_Spawn(this);
 	ShowMenu_RC(this)
 }
 
-public zv_extra_item_selected(this, itemid)
-{
-	if(itemid != g_itemid_vip)
-		return;
+// public zv_extra_item_selected(this, itemid)
+// {
+// 	if(itemid != g_itemid_vip)
+// 		return;
 
-	Inventory[this]++;
-	RC_Spawn(this);
-	ShowMenu_RC(this)
-}
+// 	Inventory[this]++;
+// 	RC_Spawn(this);
+// 	ShowMenu_RC(this)
+// }
 
 bool:IsAllowedMode()
 {
@@ -253,6 +295,13 @@ public CmdRC(this)
 		ShowMenu_RC(this)
 		return PLUGIN_HANDLED;
 	}		
+
+	if(Bought[this]&&!(zv_get_user_flags(this)&ZV_MAIN))
+	{
+		ColorChat(this, GREEN, "[GC]^1 Buy^3 VIP^1 at^3 GamerClub.NeT^1 for^3 Increased Item Limits!")
+		return PLUGIN_HANDLED;
+	}
+
 	if (!zp_items_force_buy(this, g_iItemId))
 	{
 		//ColorChat(this, GREEN, "[GC]^03 Item Unavailable")

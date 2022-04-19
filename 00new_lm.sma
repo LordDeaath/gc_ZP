@@ -138,8 +138,8 @@ public plugin_init()
 	RegisterHam(Ham_TakeDamage, ENT_CLASS_NAME3, "Laser_TakeDamage", 0)
 	register_clcmd("say /lm", "Lasermenu_LgK",0,"- Buys lasermine/Opens lasermine menu")
 	g_LENABLE	= register_cvar("zp_ltm","1")
-	g_LHEALTH	= register_cvar("zp_ltm_health","455")
-	g_LHEALTH_VIP	= register_cvar("zp_ltm_health_vip","520")
+	g_LHEALTH	= register_cvar("zp_ltm_health","520")
+	g_LHEALTH_VIP	= register_cvar("zp_ltm_health_vip","585")
 	g_LRADIUS	= register_cvar("zp_ltm_radius","25.0")
 	g_LRDMG		= register_cvar("zp_ltm_rdmg","1000") //radius damage
 	g_LDMGMODE	= register_cvar("zp_ltm_ldmgmode","0") //0 - frame dmg, 1 - once dmg, 2 - 1 second dmg
@@ -184,7 +184,7 @@ public native_lasermine_set_cost(plugin,params)
 		return false;	
 
 	if(Bought[get_param(1)])
-	set_param_byref(2, 2 * get_param_byref(2))
+	set_param_byref(2, 3 * get_param_byref(2)/2)
 
 	return true;
 }
@@ -333,7 +333,7 @@ public Lasermenu_LgK( id )
 			}
 			else
 			{
-				formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [1/2]",2*zp_items_get_cost(g_LME))
+				formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [1/2]",3*zp_items_get_cost(g_LME)/2)
 			}
 		}
 		else
@@ -390,7 +390,7 @@ public Lasermenu_LgK2( id )
 			}
 			else
 			{
-				formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [1/2]",2*zp_items_get_cost(g_LME))
+				formatex(text,charsmax(text),"Buy a Lasermine\y %d\w [1/2]",3*zp_items_get_cost(g_LME)/2)
 			}
 		}
 		else
