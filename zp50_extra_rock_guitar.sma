@@ -28,9 +28,10 @@ new const VERSION[] = "1.1";
 
 #if defined Electric
 
-new const V_GUITAR_MDL[64] = "models/zombie_plague/v_guitar_electric.mdl";
-new const P_GUITAR_MDL[64] = "models/zombie_plague/p_guitar_electric.mdl";
-new const W_GUITAR_MDL[64] = "models/zombie_plague/w_guitar_electric.mdl";
+new const V_GUITAR_MDL[64] = "models/gc/v_gc_rock.mdl";
+new const P_GUITAR_MDL[64] = "models/gc/p_gc_rock.mdl";
+new const W_GUITAR_MDL[64] = "models/gc/w_gc_rock.mdl";
+
 new const PAIN_SOUNDS[][] = {"zombie_plague/zombie_pain1.wav","zombie_plague/zombie_pain2.wav","zombie_plague/zombie_pain3.wav","zombie_plague/zombie_pain4.wav","zombie_plague/zombie_pain5.wav"}
 new const SHOCK_SOUND[] = "zombie_plague/guitar_shock.wav"
 new g_laser_sprite, cvar_guitar_shock_time,cvar_guitar_shock_req;
