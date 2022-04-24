@@ -65,7 +65,7 @@ new Float:g_RenderingAmount[33]
 
 new g_event_guitar, g_primaryattack;
 
-new Purchases,MyAkLimit;
+new Purchases;
 
 public plugin_init()
 {
@@ -253,31 +253,36 @@ public zp_fw_items_select_pre(id, itemid)
 	{
 		return ZP_ITEM_NOT_AVAILABLE;
 	}
-	if(AlivCount() >= 22)
-		MyAkLimit = 2
-	else MyAkLimit = 1
 	
-	new Txt[32]
-	format(Txt,charsmax(Txt),"[%d/%d]",Purchases,MyAkLimit)
-	zp_items_menu_text_add(Txt)
-	
-	if(Purchases>MyAkLimit)
-		return ZP_ITEM_NOT_AVAILABLE;
 
-	//zp_items_menu_text_add("[0/1]")
-	return ZP_ITEM_AVAILABLE;
-}
-AlivCount()
-{
-	new AlivePlayers
-	for(new i=1; i < 32;i++)
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
 	{
-		if(!is_user_alive(i))
-			continue
-		AlivePlayers++
+		if(is_user_alive(i))
+		{
+			alive++
+		}
 	}
-	return AlivePlayers;
+
+	if(alive<23)
+	{
+		limit=1
+	}
+	else
+	{
+		limit=2
+	}
+
+	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
+
+	if(Purchases>=limit)
+		return ZP_ITEM_NOT_AVAILABLE
+	
+	return ZP_ITEM_AVAILABLE
 }
+
 
 // public zv_extra_item_selected(player, itemid)
 // {

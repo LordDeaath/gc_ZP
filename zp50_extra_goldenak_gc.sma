@@ -36,7 +36,7 @@ Cvars:
 #include <zp50_items>
 #include <zp50_fps>
 #include <zp50_colorchat>
-#include <zmvip>
+// #include <zmvip>
 #include <xs>
 #include <zp50_gamemodes>
 
@@ -50,7 +50,7 @@ new AK_W_MODEL[64] = "models/zombie_plague/w_golden_ak47.mdl"
 new cvar_dmgmultiplier,   cvar_custommodel, cvar_uclip
 
 // Item ID
-new  g_itemid, g_itemid_vip
+new  g_itemid//, g_itemid_vip
 
 new bool:g_HasAk[33]
 new g_hasZoom[ 33 ]
@@ -69,7 +69,7 @@ new const MAXBPAMMO[] = { -1, 52, -1, 90, 1, 32, 1, 100, 90, 1, 120, 100, 100, 9
 			30, 120, 200, 32, 90, 120, 90, 2, 35, 90, 90, -1, 100 }
 
 // Sprite
-new m_spriteTexture, MyAkLimit
+new m_spriteTexture
 
 const Wep_ak47 = ((1<<CSW_AK47))
 
@@ -85,7 +85,7 @@ public plugin_init()
 	register_plugin("[ZP] Extra: Golden Ak 47", "1.1", "AlejandroSk")
 	// Register Zombie Plague extra item
 	g_itemid = zp_items_register("Golden Ak 47","",60);
-	g_itemid_vip = zv_register_extra_item("Golden AK-47","20 Ammo Packs",20,ZV_TEAM_HUMAN)
+	// g_itemid_vip = zv_register_extra_item("Golden AK-47","20 Ammo Packs",20,ZV_TEAM_HUMAN)
 	// Death Msg
 	register_event("DeathMsg", "Death", "a")
 	// Weapon Pick Up
@@ -363,35 +363,48 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 {
 	// This is not our item
 	if (itemid != g_itemid)
-		return ZP_ITEM_AVAILABLE;
+	return ZP_ITEM_AVAILABLE;
 	
 	// Antidote only available to zombies
 	if (zp_core_is_zombie(id))
-		return ZP_ITEM_DONT_SHOW;
+	return ZP_ITEM_DONT_SHOW;
 	
 	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
+	{
 		return ZP_ITEM_DONT_SHOW;
-	
+	}
 
 	if(g_HasAk[id])
+	{
 		return ZP_ITEM_NOT_AVAILABLE;
+	}
 	
-	if(AlivCount() >= 22)
-		MyAkLimit = 2
-	else MyAkLimit = 1
-	
-	new Txt[32]
-	format(Txt,charsmax(Txt),"[%d/%d]",Purchases,MyAkLimit)
-	zp_items_menu_text_add(Txt)
-	
-	if(Purchases >= MyAkLimit)
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
+	{
+		if(is_user_alive(i))
+		{
+			alive++
+		}
+	}
+
+	if(alive<23)
+	{
+		limit=1
+	}
+	else
+	{
+		limit=2
+	}
+
+	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
+
+	if(Purchases>=limit)
 		return ZP_ITEM_NOT_AVAILABLE
-
-
-	//if(Bought[id])
-	//return ZP_ITEM_NOT_AVAILABLE
 	
-	return ZP_ITEM_AVAILABLE;
+	return ZP_ITEM_AVAILABLE
 }
 public zp_fw_items_select_post(player, itemid, ignorecost)
 {
@@ -410,21 +423,21 @@ public zp_fw_items_select_post(player, itemid, ignorecost)
 	engclient_cmd(player, "weapon_ak47");
 }
 
-public zv_extra_item_selected(player, itemid)
-{
-	// This is not our item
-	if (itemid != g_itemid_vip)
-	return;
-	drop_akm12(player);
-	drop_prim(player)
-	give_item(player, "weapon_ak47")
-	new weaponid = get_weaponid("weapon_ak47")
-	ExecuteHamB(Ham_GiveAmmo, player, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
-	zp_colored_print(player,"You bought a^3 Golden AK-47")
-	g_HasAk[player] = true;
-	//Bought[player]++;	
-	engclient_cmd(player, "weapon_ak47");
-}
+// public zv_extra_item_selected(player, itemid)
+// {
+// 	// This is not our item
+// 	if (itemid != g_itemid_vip)
+// 	return;
+// 	drop_akm12(player);
+// 	drop_prim(player)
+// 	give_item(player, "weapon_ak47")
+// 	new weaponid = get_weaponid("weapon_ak47")
+// 	ExecuteHamB(Ham_GiveAmmo, player, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
+// 	zp_colored_print(player,"You bought a^3 Golden AK-47")
+// 	g_HasAk[player] = true;
+// 	//Bought[player]++;	
+// 	engclient_cmd(player, "weapon_ak47");
+// }
 
 public zp_fw_gamemodes_start()
 {
@@ -450,18 +463,6 @@ public native_give_ak(player)
 	ExecuteHamB(Ham_GiveAmmo, player, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
 	zp_colored_print(player,"You got^3 Golden AK-47")
 	g_HasAk[player] = true;
-}
-
-AlivCount()
-{
-	new AlivePlayers
-	for(new i=1; i < 32;i++)
-	{
-		if(!is_user_alive(i))
-			continue
-		AlivePlayers++
-	}
-	return AlivePlayers;
 }
 
 stock drop_prim(id) 

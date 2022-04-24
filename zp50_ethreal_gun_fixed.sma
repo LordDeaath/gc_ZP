@@ -8,7 +8,7 @@
 #include <zp50_colorchat>
 #include <zp50_fps>
 #include <xs>
-#include <zmvip>
+// #include <zmvip>
 #include <zp50_gamemodes>
 #include <zp50_class_survivor>
 
@@ -21,7 +21,7 @@ new ethereal_V_MODEL[]={"models/v_ethereal.mdl"}
 new ethereal_P_MODEL[]={"models/p_ethereal.mdl"}
 new ethereal_W_MODEL[]={"models/p_ethereal.mdl"}
 new cvar_dmg_ethereal;
-new g_itemid_ethereal, g_itemid_vip;
+new g_itemid_ethereal//, g_itemid_vip;
 new cvar_clip_ethereal;
 new cvar_ethereal_ammo;
 new g_orig_event_ethereal;
@@ -31,7 +31,7 @@ new m_iBlood[2];
 new g_ethereal_TmpClip[33];
 new g_beamSpr;
 new g_IsInPrimaryAttack;
-new Purchases, MyAkLimit;
+new Purchases;
 
 public plugin_init()
 {
@@ -62,7 +62,7 @@ public plugin_init()
 	cvar_clip_ethereal = register_cvar("zp_Ethereal_clip", "40");
 	cvar_ethereal_ammo = register_cvar("zp_Ethereal_ammo", "400");
 	g_itemid_ethereal = zp_items_register("Ethereal Plasma Rifle", "",75);
-	g_itemid_vip = zv_register_extra_item("Ethereal Plasma", "10 Ammo Packs", 10, ZV_TEAM_HUMAN)
+	// g_itemid_vip = zv_register_extra_item("Ethereal Plasma", "10 Ammo Packs", 10, ZV_TEAM_HUMAN)
 }
 
 new Infection, Multi;
@@ -157,29 +157,47 @@ public zp_fw_items_select_pre(id, itemid)
 	{
 		return ZP_ITEM_NOT_AVAILABLE;
 	}
-	if(AlivCount() >= 22)
-		MyAkLimit = 3
-	else MyAkLimit = 2
-	new Txt[32]
-	format(Txt,charsmax(Txt),"[%d/%d]",Purchases,MyAkLimit)
-	zp_items_menu_text_add(Txt)
 
-	
-	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
-		MyAkLimit = 2
-		
-	if(Purchases>=MyAkLimit)
-		return ZP_ITEM_NOT_AVAILABLE
-/*
-	if(Purchases>1)
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
 	{
-		zp_items_menu_text_add("[2/2]");
-		return ZP_ITEM_NOT_AVAILABLE
+		if(is_user_alive(i))
+		{
+			alive++
+		}
 	}
+
+	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
+	{		
+		if(alive<23)
+		{
+			limit=1
+		}
+		else
+		{
+			limit=2
+		}
+	}
+	else
+	{	
+		if(alive<23)
+		{
+			limit=2
+		}
+		else
+		{
+			limit=3
+		}
+	}
+
+	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
+
+	if(Purchases>=limit)
+		return ZP_ITEM_NOT_AVAILABLE
 	
-	zp_items_menu_text_add(!Purchases?"[0/2]":"[1/2]");
-	*/
-	return ZP_ITEM_AVAILABLE;
+	return ZP_ITEM_AVAILABLE
 }
 
 public zp_fw_items_select_post(player, itemid)
@@ -192,27 +210,16 @@ public zp_fw_items_select_post(player, itemid)
 		give_ethereal(player);
 	}
 }
-AlivCount()
-{
-	new AlivePlayers
-	for(new i=1; i < 32;i++)
-	{
-		if(!is_user_alive(i))
-			continue
-		AlivePlayers++
-	}
-	return AlivePlayers;
-}
 
-public zv_extra_item_selected(player, itemid)
-{
-	if(itemid==g_itemid_vip)
-	{
-		//Bought[player]++
-		zp_colored_print(player, "You bought an^3 Ethereal Plasma")
-		give_ethereal(player);
-	}
-}
+// public zv_extra_item_selected(player, itemid)
+// {
+// 	if(itemid==g_itemid_vip)
+// 	{
+// 		//Bought[player]++
+// 		zp_colored_print(player, "You bought an^3 Ethereal Plasma")
+// 		give_ethereal(player);
+// 	}
+// }
 public give_ethereal(id)
 {
 	engclient_cmd(id, "drop", "weapon_ump45")	

@@ -6,7 +6,7 @@
 #include <zp50_core>
 #include <zp50_items>
 #include <fun>
-#include <zmvip>
+// #include <zmvip>
 #include <zp50_class_sniper>
 #include <zp50_gamemodes>
 #include <zp50_class_survivor>
@@ -26,7 +26,7 @@ native zp_class_hunter_get(id)
 const GoldenAWP_weapon_cost = 30  // Cost
 
 //----------------
-new g_iItemID, g_itemid_vip
+new g_iItemID//, g_itemid_vip
 new bullets[ 33 ]
 
 new g_HasGoldenAWPWeapon[33], g_CurrentWeapon[33]
@@ -46,7 +46,7 @@ new Thunder
 
 new const thunder_sound[] = "ambience/thunder_clap.wav";
 
-new Purchases,MyAkLimit;
+new Purchases;
 
 public plugin_init()
 {
@@ -63,7 +63,7 @@ public plugin_init()
 	
 	//Register Zombie Plague extra item
 	g_iItemID = zp_items_register("Thunder AWP", "x3 DMG", 70, 1, 1)
-	g_itemid_vip = zv_register_extra_item("Thunder AWP", "10 Ammo Packs",10,ZV_TEAM_HUMAN);
+	// g_itemid_vip = zv_register_extra_item("Thunder AWP", "10 Ammo Packs",10,ZV_TEAM_HUMAN);
 	//Hamsandwich
 	RegisterHam(Ham_Spawn, "player", "fw_PlayerSpawn_Post", 1)
 	RegisterHam(Ham_TakeDamage, "player", "fw_TakeDamage")
@@ -326,40 +326,48 @@ public zp_fw_items_select_pre(id, i , c)
 
 	if(g_HasGoldenAWPWeapon[id])
 		return ZP_ITEM_NOT_AVAILABLE;
-		
-	if(AlivCount() >= 22)
-		MyAkLimit = 3
-	else MyAkLimit = 2
-	new Txt[32]
-	format(Txt,charsmax(Txt),"[%d/%d]",Purchases,MyAkLimit)
-	zp_items_menu_text_add(Txt)
 
 	
-	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
-		MyAkLimit = 2
-		
-	if(Purchases>=MyAkLimit)
-		return ZP_ITEM_NOT_AVAILABLE
-/*
-	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
+
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
 	{
-		if(Purchases>0)
+		if(is_user_alive(i))
 		{
-			zp_items_menu_text_add("[1/1]")
-			return ZP_ITEM_NOT_AVAILABLE;
+			alive++
 		}
-		zp_items_menu_text_add("[0/1]");
-		return ZP_ITEM_AVAILABLE;
 	}
 
-	if(Purchases>1)
-	{
-		zp_items_menu_text_add("[2/2]")
-		return ZP_ITEM_NOT_AVAILABLE;
+	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
+	{		
+		if(alive<23)
+		{
+			limit=1
+		}
+		else
+		{
+			limit=2
+		}
+	}
+	else
+	{	
+		if(alive<23)
+		{
+			limit=2
+		}
+		else
+		{
+			limit=3
+		}
 	}
 
-	zp_items_menu_text_add(!Purchases?"[0/2]":"[1/2]")
-*/
+	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
+
+	if(Purchases>=limit)
+		return ZP_ITEM_NOT_AVAILABLE
+	
 	return ZP_ITEM_AVAILABLE
 }
 public zp_fw_items_select_post(id, i, c)
@@ -376,30 +384,20 @@ public zp_fw_items_select_post(id, i, c)
 	engclient_cmd(id, "weapon_awp")	
 	zp_colored_print(id, "You bought a^3 Thunder AWP")
 }
-AlivCount()
-{
-	new AlivePlayers
-	for(new i=1; i < 32;i++)
-	{
-		if(!is_user_alive(i))
-			continue
-		AlivePlayers++
-	}
-	return AlivePlayers;
-}
-public zv_extra_item_selected(id, itemid)
-{
-	if(itemid != g_itemid_vip)
-		return;	
 
-	engclient_cmd(id, "drop", "weapon_awp")
-	new weaponid = give_item(id, "weapon_awp")			
-	cs_set_weapon_ammo(weaponid, get_pcvar_num(cvar_thunder_clip));
-	cs_set_user_bpammo(id, CSW_AWP, 30);
-	g_HasGoldenAWPWeapon[id] = true;
-	engclient_cmd(id, "weapon_awp")	
-	zp_colored_print(id, "You bought a^3 Thunder AWP")
-}
+// public zv_extra_item_selected(id, itemid)
+// {
+// 	if(itemid != g_itemid_vip)
+// 		return;	
+
+// 	engclient_cmd(id, "drop", "weapon_awp")
+// 	new weaponid = give_item(id, "weapon_awp")			
+// 	cs_set_weapon_ammo(weaponid, get_pcvar_num(cvar_thunder_clip));
+// 	cs_set_user_bpammo(id, CSW_AWP, 30);
+// 	g_HasGoldenAWPWeapon[id] = true;
+// 	engclient_cmd(id, "weapon_awp")	
+// 	zp_colored_print(id, "You bought a^3 Thunder AWP")
+// }
 
 public fw_Reload(weapon_entity)
 {
@@ -569,3 +567,4 @@ Do_Thunder( start[ 3 ], end[ 3 ] )
 	
 	emit_sound( 0 ,CHAN_ITEM, thunder_sound, 1.0, ATTN_NORM, 0, PITCH_NORM );
 }
+

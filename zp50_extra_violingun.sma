@@ -8,7 +8,7 @@
 #include < fakemeta >
 #include < hamsandwich >
 #include < zp50_items >
-#include < zmvip >
+// #include < zmvip >
 #include <zp50_colorchat>
 #include <zp50_gamemodes>
 #include <zp50_class_survivor>
@@ -26,7 +26,8 @@
 
 new const VERSION[] = "1.3";
 
-new g_clipammo[33], g_has_violingun[33], g_itemid,g_itemid_vip, g_hamczbots, g_event_violingun, g_primaryattack, cvar_violingun_damage_x, cvar_violingun_bpammo, cvar_violingun_shotspd, cvar_violingun_oneround, cvar_violingun_clip, cvar_botquota;
+new  g_itemid//,g_itemid_vip
+new g_clipammo[33], g_has_violingun[33], g_hamczbots, g_event_violingun, g_primaryattack, cvar_violingun_damage_x, cvar_violingun_bpammo, cvar_violingun_shotspd, cvar_violingun_oneround, cvar_violingun_clip, cvar_botquota;
 
 new const SHOT_SOUND[][] = {"weapons/violingun_shoot1.wav", "weapons/violingun_shoot2.wav"}
 
@@ -66,7 +67,7 @@ public plugin_init()
 
 	// Extra Item Register
 	g_itemid = zp_items_register(ITEM_NAME,"", ITEM_COST);	
-	g_itemid_vip = zv_register_extra_item("Frost Violin", "10 Ammo Packs",10,ZV_TEAM_HUMAN);
+	// g_itemid_vip = zv_register_extra_item("Frost Violin", "10 Ammo Packs",10,ZV_TEAM_HUMAN);
 	// Cvars Register
 	cvar_violingun_damage_x = register_cvar("zp_violingun_damage_x", "3.0");
 	cvar_violingun_clip = register_cvar("zp_violingun_clip", "40");
@@ -110,7 +111,7 @@ public plugin_init()
 	#endif
 }
 
-new Infection, Multi, MyAkLimit;
+new Infection, Multi;
 public plugin_cfg()
 {
 	Infection = zp_gamemodes_get_id("Infection Mode");
@@ -203,23 +204,47 @@ public zp_fw_items_select_pre(id, itemid)
 	{
 		return ZP_ITEM_NOT_AVAILABLE;
 	}
-	
-	if(AlivCount() >= 22)
-		MyAkLimit = 3
-	else MyAkLimit = 2
-	new Txt[32]
-	format(Txt,charsmax(Txt),"[%d/%d]",Purchases,MyAkLimit)
-	zp_items_menu_text_add(Txt)
 
-	
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
+	{
+		if(is_user_alive(i))
+		{
+			alive++
+		}
+	}
+
 	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
-		MyAkLimit = 2
-		
-	if(Purchases>=MyAkLimit)
-		return ZP_ITEM_NOT_AVAILABLE
+	{		
+		if(alive<23)
+		{
+			limit=1
+		}
+		else
+		{
+			limit=2
+		}
+	}
+	else
+	{	
+		if(alive<23)
+		{
+			limit=2
+		}
+		else
+		{
+			limit=3
+		}
+	}
 
+	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
+
+	if(Purchases>=limit)
+		return ZP_ITEM_NOT_AVAILABLE
 	
-	return ZP_ITEM_AVAILABLE;
+	return ZP_ITEM_AVAILABLE
 }
 
 public zp_fw_items_select_post(player, itemid)
@@ -231,17 +256,7 @@ public zp_fw_items_select_post(player, itemid)
 	command_give_violingun(player);
 	zp_colored_print(player, "You bought a^3 Frost Violin");
 }
-AlivCount()
-{
-	new AlivePlayers
-	for(new i=1; i < 32;i++)
-	{
-		if(!is_user_alive(i))
-			continue
-		AlivePlayers++
-	}
-	return AlivePlayers;
-}
+
 public command_give_violingun(player)
 {	
 	drop_guitar(player);
@@ -545,13 +560,13 @@ make_explosion_effect(id)
 	message_end()
 }
 #endif
-public zv_extra_item_selected(player, itemid)
-{
-	if(itemid != g_itemid_vip)
-		return;
+// public zv_extra_item_selected(player, itemid)
+// {
+// 	if(itemid != g_itemid_vip)
+// 		return;
 	
-	command_give_violingun(player);
-}
+// 	command_give_violingun(player);
+// }
 
 stock UTIL_PlayWeaponAnimation(const Player, const Sequence)
 {
@@ -582,3 +597,4 @@ stock drop_primary(id)
 		}
 	}
 }
+
