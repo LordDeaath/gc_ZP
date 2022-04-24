@@ -167,12 +167,10 @@ public CheckMap()
     else if(equali(mapname, "zm_aztec_infinity"))
     {
         Map = INFINITY
-        Ent1=engfunc(EngFunc_FindEntityByString, 0, "model", "*20") 
-        Ent2=engfunc(EngFunc_FindEntityByString, 0, "model", "*19")             
-        remove_entity(engfunc(EngFunc_FindEntityByString, 0, "model", "*62"))               
-        create_secret(Float:{-1475.5,427.7,-169.8},Float:{28.4,33.0,32.0},Float:{-28.4,-33.0,-32.0})   
-        create_secret(Float:{-1288.1,-92.5,-235.4},Float:{24.3,24.2,70.9},Float:{-24.3,-24.2,-70.9})
-        create_secret(Float:{-1193.2,-282.0,-274.9},Float:{121.7,222.0,35.3},Float:{-121.7,-222.0,-35.3})
+        Ent1=engfunc(EngFunc_FindEntityByString, 0, "model", "*19")             
+        remove_entity(engfunc(EngFunc_FindEntityByString, 0, "model", "*62"))    
+        remove_entity(engfunc(EngFunc_FindEntityByString, 0, "model", "*20"))    
+        create_secret(Float:{322.0,258.5,8.8},Float:{566.1,328.1,243.4},Float:{-566.1,-328.1,-243.4})
     }
     else if(equali(mapname, "zm_new_army"))
     {
@@ -516,10 +514,7 @@ public lock()
         {      
             set_pev(Ent1, pev_classname, "func_wall")
             set_pev(Ent1, pev_solid, SOLID_BBOX)
-            set_pev(Ent1, pev_movetype, MOVETYPE_PUSHSTEP)   
-            set_pev(Ent2, pev_classname, "func_wall")
-            set_pev(Ent2, pev_solid, SOLID_BBOX)
-            set_pev(Ent2, pev_movetype, MOVETYPE_PUSHSTEP)   
+            set_pev(Ent1, pev_movetype, MOVETYPE_PUSHSTEP)    
         }
         case DUSTB:
         {
@@ -614,8 +609,6 @@ public unlock()
         {            
             set_pev(Ent1, pev_classname, "func_illusionary")
             set_pev(Ent1, pev_solid, SOLID_NOT)
-            set_pev(Ent2, pev_classname, "func_illusionary")
-            set_pev(Ent2, pev_solid, SOLID_NOT)
         }    
         case AREA51:
         {
