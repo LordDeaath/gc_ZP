@@ -22,7 +22,7 @@
 #define TASK_NIGHTVISION 7532415398702
 #define TASK_REPLAY 100
 
-//native zp_is_blinded(id)
+native zp_is_blind(id)
 native zp_is_nvg_active(id);
 native zp_apocalypse_icon_set();
 native zp_nade_bought();
@@ -176,13 +176,13 @@ public BeginApocalypse()
 			continue;
 		}
 		
-		set_user_maxspeed(i, get_user_maxspeed(i)*1.3)		
+		set_user_maxspeed(i, get_user_maxspeed(i)*1.4)		
 		
 		if(zp_class_nemesis_get(i))
 		{			
 			continue;
 		}
-		set_user_health(i, floatround(float(get_user_health(i))*1.5))
+		set_user_health(i, floatround(float(get_user_health(i))*1.75))
 	}
 }
 
@@ -212,8 +212,8 @@ public custom_nightvision_task()
 		if(zp_is_nvg_active(id))
 			continue;
 
-		//if(zp_is_blinded(id))
-		//	continue;
+		if(zp_is_blind(id))
+			continue;
 			
 		if(!zp_core_is_zombie(id))
 		{	
@@ -275,8 +275,8 @@ public zp_fw_core_infect_post(id,infector)
 
 	if(!infector||id==infector)
 	{		
-		set_user_maxspeed(id, get_user_maxspeed(id)*1.3)
-		set_user_health(id, floatround(float(get_user_health(id))*1.5))
+		set_user_maxspeed(id, get_user_maxspeed(id)*1.4)
+		set_user_health(id, floatround(float(get_user_health(id))*1.75))
 	}
 	else
 	{
