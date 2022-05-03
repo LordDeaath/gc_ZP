@@ -547,7 +547,7 @@ public menu_buy_primary(id, key)
 		return PLUGIN_HANDLED;
 	
 	// Special keys / weapon list exceeded
-	if (key >= MENU_KEY_AUTOSELECT || WPN_SELECTION >= WPN_MAXIDS2)
+	if (key >= MENU_KEY_AUTOSELECT || WPN_SELECTION >= WPN_MAXIDS)
 	{
 		switch (key)
 		{
@@ -600,7 +600,7 @@ public menu_buy_primary2(id, key)
 		return PLUGIN_HANDLED;
 	
 	// Special keys / weapon list exceeded
-	if (key >= MENU_KEY_AUTOSELECT || WPN_SELECTION >= WPN_MAXIDS)
+	if (key >= MENU_KEY_AUTOSELECT || WPN_SELECTION >= WPN_MAXIDS2)
 	{
 		switch (key)
 		{

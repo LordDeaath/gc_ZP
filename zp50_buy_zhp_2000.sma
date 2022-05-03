@@ -117,5 +117,6 @@ public zp_fw_items_select_post(id, i, c)
 	}
 	Purchases[id]++
 	ColorChat(id, GREEN, "[GC]^1 You bought^3 2000 HP!")
+	set_user_health(id, get_user_health(id)+2000)
 }
 

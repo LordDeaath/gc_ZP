@@ -131,6 +131,7 @@ public plugin_natives()
 	register_native("zp_vip_model_get","native_vip_model_get",1)
 	register_native("zp_admin_model_toggle","native_admin_model_toggle",1)
 	register_native("zp_admin_model_get","native_admin_model_get",1)
+	register_native("zp_admin_model_set", "native_admin_model_set", 1)
 	register_native("zp_vip_glow_toggle","native_vip_glow_toggle",1)
 	register_native("zp_vip_glow_get","native_vip_glow_get",1)	
 	register_native("zp_set_human_glow","native_set_human_glow",1)	
@@ -370,6 +371,11 @@ public client_disconnected(id)
 public native_admin_model_get(id)
 {
 	return !DisabledAdminModel[id];
+}
+
+public native_admin_model_set(id, bool:on)
+{
+	DisabledAdminModel[id] = !on;
 }
 
 public native_admin_model_toggle(id)

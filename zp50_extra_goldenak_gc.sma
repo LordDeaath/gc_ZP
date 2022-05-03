@@ -36,7 +36,7 @@ Cvars:
 #include <zp50_items>
 #include <zp50_fps>
 #include <zp50_colorchat>
-// #include <zmvip>
+#include <zmvip>
 #include <xs>
 #include <zp50_gamemodes>
 
@@ -379,6 +379,9 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 		return ZP_ITEM_NOT_AVAILABLE;
 	}
 	
+	if(zv_get_user_flags(id)&ZV_MAIN)
+		return ZP_ITEM_AVAILABLE;
+
 	static limit, alive, i
 	alive = 0;
 
@@ -399,19 +402,48 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 		limit=2
 	}
 
+	if(Purchases>=limit)
+	{		
+		zp_items_menu_text_add(fmt("[%d/%d] \r[VIP]",Purchases,limit))
+		return ZP_ITEM_NOT_AVAILABLE
+	}
+	
 	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
 
-	if(Purchases>=limit)
-		return ZP_ITEM_NOT_AVAILABLE
-	
 	return ZP_ITEM_AVAILABLE
 }
+
 public zp_fw_items_select_post(player, itemid, ignorecost)
 {
 	// This is not our item
 	if (itemid != g_itemid)
 	return;
-	Purchases++;
+	
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
+	{
+		if(is_user_alive(i))
+		{
+			alive++
+		}
+	}
+
+	if(alive<23)
+	{
+		limit=1
+	}
+	else
+	{
+		limit=2
+	}
+
+	if(Purchases<limit)
+	{		
+		Purchases++;
+	}
+
 	drop_akm12(player);
 	drop_prim(player)
 	give_item(player, "weapon_ak47")

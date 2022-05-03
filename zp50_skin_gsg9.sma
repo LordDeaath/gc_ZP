@@ -1,6 +1,8 @@
 #include <amxmodx>
 #include <zp50_class_human>
 
+native zp_admin_model_set(id, bool:on)
+
 new const skin_name[] = "GSG9"
 new const skin_info[] = "Umbrella Corp."
 new const skin_models[][] = { "gc_gsg9" }
@@ -32,4 +34,15 @@ public zp_fw_class_human_select_pre(id, classid)
     }
 
     return ZP_CLASS_AVAILABLE;
+}
+
+public zp_fw_class_human_select_post(id, classid)
+{
+    if(classid!=g_SkinID)
+    {        
+        zp_admin_model_set(id, false)
+        return;
+    }
+
+    zp_admin_model_set(id, true)
 }

@@ -13294,6 +13294,7 @@ public cmd_listrecent_handler( player_id, menu, item )
 	menu_display( player_id, menu );
 	
 	LOG( 1, "    ( cmd_listrecent_handler ) Just Returning PLUGIN_HANDLED." )
+	DESTROY_PLAYER_NEW_MENU_TYPE( menu )
 	return PLUGIN_HANDLED;
 }
 

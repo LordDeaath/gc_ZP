@@ -6,7 +6,7 @@
 #include <zp50_core>
 #include <zp50_items>
 #include <fun>
-// #include <zmvip>
+#include <zmvip>
 #include <zp50_class_sniper>
 #include <zp50_gamemodes>
 #include <zp50_class_survivor>
@@ -327,7 +327,8 @@ public zp_fw_items_select_pre(id, i , c)
 	if(g_HasGoldenAWPWeapon[id])
 		return ZP_ITEM_NOT_AVAILABLE;
 
-	
+	if(zv_get_user_flags(id)&ZV_MAIN)
+		return ZP_ITEM_AVAILABLE;
 
 	static limit, alive, i
 	alive = 0;
@@ -363,11 +364,14 @@ public zp_fw_items_select_pre(id, i , c)
 		}
 	}
 
+	if(Purchases>=limit)
+	{		
+		zp_items_menu_text_add(fmt("[%d/%d] \r[VIP]",Purchases,limit))
+		return ZP_ITEM_NOT_AVAILABLE
+	}
+	
 	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
 
-	if(Purchases>=limit)
-		return ZP_ITEM_NOT_AVAILABLE
-	
 	return ZP_ITEM_AVAILABLE
 }
 public zp_fw_items_select_post(id, i, c)
@@ -375,7 +379,44 @@ public zp_fw_items_select_post(id, i, c)
 	if(i != g_iItemID)
 		return;
 
-	Purchases++;
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
+	{
+		if(is_user_alive(i))
+		{
+			alive++
+		}
+	}
+
+	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
+	{		
+		if(alive<23)
+		{
+			limit=1
+		}
+		else
+		{
+			limit=2
+		}
+	}
+	else
+	{	
+		if(alive<23)
+		{
+			limit=2
+		}
+		else
+		{
+			limit=3
+		}
+	}
+
+	if(Purchases<limit)
+	{		
+		Purchases++
+	}
 	engclient_cmd(id, "drop", "weapon_awp")
 	new weaponid = give_item(id, "weapon_awp")			
 	cs_set_weapon_ammo(weaponid, get_pcvar_num(cvar_thunder_clip));

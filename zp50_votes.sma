@@ -372,24 +372,28 @@ public SelectedMode(id, menu, item)
 	if(!(get_user_flags(id) & ADMIN_KICK)&&!(zv_get_user_flags(id)&ZV_MAIN))
 	{
 		ColorChat(id, GREEN, "[GC]^1 Special Round Votes^1 can be only started by^3 Admins/VIPS^1 and above")
+		menu_destroy(menu)
 		return PLUGIN_HANDLED;
 	}
 	
 	if(gSpecialRound)
 	{
 		ColorChat(id, GREEN,"[GC]^1 Next round is voted to be^3 %s.^1 Please try again later", ModeName)
+		menu_destroy(menu)
 		return PLUGIN_HANDLED;
 	}
 	
 	if(task_exists(TASK_ID))
 	{
 		 ColorChat(id, GREEN, "[GC]^1 Please wait till the^3 Current Vote^1 ends")
+		 menu_destroy(menu)
 		 return PLUGIN_HANDLED;
 	}
 
 	if(zp_gamemodes_get_current()==ZP_NO_GAME_MODE)
 	{
 		ColorChat(id, GREEN, "[GC]^1 Please wait until the^3 Round^1 starts!");
+		menu_destroy(menu)
 		return PLUGIN_HANDLED;
 	}
 
@@ -398,12 +402,14 @@ public SelectedMode(id, menu, item)
 		if(zp_gamemodes_get_current() != gMode_Plague &&zp_gamemodes_get_current() !=  gMode_Swarm&&zp_gamemodes_get_current() != g_MultiID && zp_gamemodes_get_current() != g_NormalID)
 		{
 			ColorChat(id, GREEN, "[GC]^1 You can only vote for a^3 Special Round^1 during a^3 Normal Mode!")
+			menu_destroy(menu)
 			return PLUGIN_HANDLED;
 		}
 				
 		if(gNextRoundShouldBe<2)
 		{
 			ColorChat(id, GREEN, "[GC]^1 You must wait^3 2 Rounds^1 between specials!")
+			menu_destroy(menu)
 			return PLUGIN_HANDLED;
 		}
 	}	
@@ -700,6 +706,7 @@ public SelectedMode(id, menu, item)
 			}
 		}*/
 	}	
+	menu_destroy(menu)
 	return PLUGIN_HANDLED;
 }
 

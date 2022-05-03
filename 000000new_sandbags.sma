@@ -289,13 +289,13 @@ public menu_command(id, menu, item)
 						{
 							show_the_menu(id); 
 							ColorChat(id, GREEN, "[GC]^03 Sandbags can't be placed here!")
-							return PLUGIN_CONTINUE;
+							return PLUGIN_HANDLED;
 						}
 						new money = g_bolsas[id] 
 						if ( money < 1 ) 
 						{ 
 						ColorChat(id,GREEN,"[GC]^03 You do not have enough sandbags to place sandbags!") 
-						return PLUGIN_CONTINUE 
+						return PLUGIN_HANDLED 
 						}
 						g_bolsas[id]--
 						place_palletwbags(id); 
@@ -306,7 +306,7 @@ public menu_command(id, menu, item)
 				}
 	
 				else ColorChat(id,GREEN,"[GC]^03 Zombies  Can't use this.")
-				return PLUGIN_CONTINUE     
+				return PLUGIN_HANDLED     
 			}
 			else
 				zp_items_force_buy(id, g_itemid_bolsas)				

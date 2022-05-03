@@ -288,14 +288,13 @@ public native_zombie_madness_set(id)
 	if(task_exists(id+TASK_MADNESS))
 	{
 		set_task(get_pcvar_float(cvar_zombie_madness_time)+MadnessStart[id]-get_gametime(), "native_zombie_madness_set", id)		
-		MadnessStart[id]=get_gametime()
+		// MadnessStart[id]+=get_pcvar_float(cvar_zombie_madness_time)
 		return 1;
 	}
 
 	MadnessStart[id]=get_gametime()
 	// Do not take damage
 	flag_set(g_MadnessBlockDamage, id)
-	
 	// Madness aura
 	set_task(0.1, "madness_aura", id+TASK_AURA, _, _, "b")/*
 	zp_items_set_purchases(g_ItemID, zp_items_get_purchases(g_ItemID)+1)

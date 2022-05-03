@@ -14,8 +14,8 @@ new bool:gJamDuck[33];
 new bool:gJamJump[33];
 new gCheckJump[33];
 new gCheckDuck[33];
-new Frames[33], Jumps[33], Perfect[33]
-new Ducks[33]
+new FramesJ[33], Jumps[33], Perfect[33]
+new FramesD[33], Ducks[33]
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
@@ -63,7 +63,7 @@ public cmdJamStrafe(id,level,cid)
 			ColorChat(i, GREEN, "[GC]^3 ADMIN^4 %s^3 is jamming^4 %s^3's strafes!",adminname,playername)
 		}
 		server_print("[GC] ADMIN <%s> is jamming <%s>'s strafes!",adminname,playername)
-		set_task(0.2,"JamStrafe",player,"",0,"b")
+		// set_task(0.2,"JamStrafe",player,"",0,"b")
 		gJamStrafe[player]=true;
 		log_to_file("amx_exec.log","ADMIN %s <%s> is jamming %s <%s> strafes!",adminname,authid,playername,authid2)
 	}
@@ -77,7 +77,7 @@ public cmdJamStrafe(id,level,cid)
 			ColorChat(i, GREEN, "[GC]^3 ADMIN^4 %s^3 stopped jamming^4 %s^3's strafes!",adminname,playername)		
 		}		
 		server_print("[GC] ADMIN <%s> stopped jamming <%s>'s strafes!",adminname,playername)
-		remove_task(player);
+		// remove_task(player);
 		gJamStrafe[player]=false;			
 		log_to_file("amx_exec.log","ADMIN %s <%s> stopped jamming %s <%s> strafes!",adminname,authid,playername,authid2)
 	}
@@ -121,7 +121,7 @@ public cmdJamJump(id,level,cid)
 		}
 		server_print("[GC] ADMIN <%s> is jamming <%s>'s jumps!",adminname,playername)
 
-		set_task(0.1,"JamJump",player,"",0,"b")
+		// set_task(0.1,"JamJump",player,"",0,"b")
 		gJamJump[player]=true;			
 		log_to_file("amx_exec.log","ADMIN %s <%s> is jamming %s <%s> jumps!",adminname,authid,playername,authid2)
 	}
@@ -135,7 +135,7 @@ public cmdJamJump(id,level,cid)
 			ColorChat(i, GREEN, "[GC]^3 ADMIN^4 %s^3 stopped jamming^4 %s^3's jumps!",adminname,playername)			
 		}		
 		server_print("[GC] ADMIN <%s> stopped jamming <%s>'s jumps!",adminname,playername)
-		remove_task(player);
+		// remove_task(player);
 		gJamJump[player]=false;		
 		log_to_file("amx_exec.log","ADMIN %s <%s> stopped jamming %s <%s> jumps!",adminname,authid,playername,authid2)
 	}
@@ -180,7 +180,7 @@ public cmdJamDuck(id,level,cid)
 			ColorChat(i, GREEN, "[GC]^3 ADMIN^4 %s^3 is jamming^4 %s^3's ducks!",adminname,playername)		
 		}
 		server_print("[GC] ADMIN <%s> is jamming <%s>'s ducks!",adminname,playername)
-		set_task(0.1,"JamDuck",player,"",0,"b")
+		// set_task(0.1,"JamDuck",player,"",0,"b")
 		gJamDuck[player]=true;			
 		log_to_file("amx_exec.log","ADMIN %s <%s> is jamming %s <%s> ducks!",adminname,authid,playername,authid2)
 	}
@@ -195,31 +195,32 @@ public cmdJamDuck(id,level,cid)
 		
 		}		
 		server_print("[GC] ADMIN <%s> stopped jamming <%s>'s ducks!",adminname,playername)
-		remove_task(player);
+		// remove_task(player);
 		gJamDuck[player]=false;
 		log_to_file("amx_exec.log","ADMIN %s <%s> stopped jamming %s <%s> ducks!",adminname,authid,playername,authid2)
 	}
 	return PLUGIN_HANDLED;
 }
 
-public JamStrafe(id)
-{
-	client_cmd(id,"-moveleft")
-	client_cmd(id,"-moveright")
-}
+// public JamStrafe(id)
+// {
+// 	client_cmd(id,"-moveleft")
+// 	client_cmd(id,"-moveright")
+// }
 
-public JamJump(id)
-{
-	client_cmd(id,"-jump")
-}
+// public JamJump(id)
+// {
+// 	client_cmd(id,"-jump")
+// }
 
-public JamDuck(id)
-{
-	client_cmd(id,"-duck")
-}
+// public JamDuck(id)
+// {
+// 	client_cmd(id,"-duck")
+// }
+
 public client_disconnected(id)
 {
-	remove_task(id)
+	// remove_task(id)
 	gJamStrafe[id]=false;
 	gJamJump[id]=false;
 	gJamDuck[id]=false;
@@ -264,7 +265,7 @@ public cmdCheckJump(id,level,cid)
 		server_print("[GC]ADMIN <%s> is checking <%s>'s jumps!",adminname,playername)
 		Jumps[player]=0;
 		Perfect[player]=0;
-		Frames[player]=0;
+		FramesJ[player]=0;
 		if(id)
 		gCheckJump[player]=id;
 		else
@@ -322,7 +323,7 @@ public cmdCheckDuck(id,level,cid)
 		server_print("[GC]ADMIN <%s> is checking <%s>'s ducks!",adminname,playername)
 		Ducks[player]=0;
 		Perfect[player]=0;
-		Frames[player]=0;
+		FramesD[player]=0;
 		if(id)
 		gCheckDuck[player]=id;
 		else
@@ -345,77 +346,68 @@ public cmdCheckDuck(id,level,cid)
 
 public client_PreThink(id)
 {
-	if(gCheckJump[id])
-	{
-		if(!is_user_alive(id))
-			return;	
-
-		if(!(entity_get_int(id, EV_INT_flags)&FL_ONGROUND))
-		{
-			return;
-		}
-
-		Frames[id]++
-
-		if(!(entity_get_int(id, EV_INT_button)&IN_JUMP))
-		{
-			return;
-		}
-
-		if(entity_get_int(id, EV_INT_oldbuttons)&IN_JUMP)
-			return;
-
-		if(Frames[id]<10)
-		{
-			static name[32]
-			get_user_name(id, name, charsmax(name))
-			Jumps[id]++
-			if(Frames[id]==1)
-			{			
-				Perfect[id]++
-				if(is_user_connected(gCheckJump[id]))
-					ColorChat(gCheckJump[id], GREEN, "[GC]^3 %s^1 did^3 %d^1 Perfect Jumps out of^3 %d",name, Perfect[id], Jumps[id])
-				server_print("[GC] <%s> did <%d> Perfect Jumps out of <%d>",name, Perfect[id], Jumps[id])
-			}
-		}
-
-		Frames[id] = 0;
+	if(!is_user_alive(id))
 		return;
+	
+	if(gJamDuck[id])
+	{
+		if(entity_get_int(id, EV_INT_button)&IN_DUCK)
+		client_cmd(id, "-duck")
 	}
 
-	if(gCheckDuck[id])
-	{
-		if(!is_user_alive(id))
-        return;
+	if(gJamJump[id])
+	{		
+		if(entity_get_int(id, EV_INT_button)&IN_JUMP)
+		client_cmd(id, "-jump")
+	}
 
-		if(!(entity_get_int(id, EV_INT_flags)&FL_ONGROUND))
-		{
-			return;
-		}    
-
-		Frames[id]++
-
-		if(entity_get_int(id, EV_INT_button)&IN_DUCK)
-		{
-			return;
-		}
-
-		if(!(entity_get_int(id, EV_INT_oldbuttons)&IN_DUCK))
-			return;
+	if(gJamStrafe[id])
+	{		
+		if(entity_get_int(id, EV_INT_button)&IN_MOVERIGHT)
+			client_cmd(id, "-moveright")		
 		
-		if(!entity_get_int(id, EV_INT_bInDuck))
-			return;
+		if(entity_get_int(id, EV_INT_button)&IN_MOVELEFT)
+			client_cmd(id, "-moveleft")
+	}
 
-		if(Frames[id]<10)
-		{					
-			Ducks[id]++
-			static name[32]
-			get_user_name(id, name, charsmax(name))
-			ColorChat(gCheckDuck[id], GREEN, "[GC]^3 %s^1 : ^3%d^1 Ground Frames (Duck Number^3 %d^1)",name, Frames[id],Ducks[id])
-			server_print("<%s> <%d> Ground Frames (Duck Number <%d>)", name, Frames[id], Ducks[id])
-		}
+	if(gCheckJump[id]&&(entity_get_int(id, EV_INT_flags)&FL_ONGROUND))
+	{
+		FramesJ[id]++
 
+		if((entity_get_int(id, EV_INT_button)&IN_JUMP)&&!(entity_get_int(id, EV_INT_oldbuttons)&IN_JUMP))
+		{
+			if(FramesJ[id]<10)
+			{
+				static name[32]
+				get_user_name(id, name, charsmax(name))
+				Jumps[id]++
+				if(FramesJ[id]==1)
+				{			
+					Perfect[id]++
+					if(is_user_connected(gCheckJump[id]))
+						ColorChat(gCheckJump[id], GREEN, "[GC]^3 %s^1 did^3 %d^1 Perfect Jumps out of^3 %d",name, Perfect[id], Jumps[id])
+					server_print("[GC] <%s> did <%d> Perfect Jumps out of <%d>",name, Perfect[id], Jumps[id])
+				}
+			}
+			FramesJ[id] = 0		
+		}	
+	}
 
-		Frames[id]=0
+	if(gCheckDuck[id]&&(entity_get_int(id, EV_INT_flags)&FL_ONGROUND))
+	{
+		FramesD[id]++
+
+		if(!(entity_get_int(id, EV_INT_button)&IN_DUCK)&&(entity_get_int(id, EV_INT_oldbuttons)&IN_DUCK)&&entity_get_int(id, EV_INT_bInDuck))
+		{
+			if(FramesD[id]<10)
+			{					
+				Ducks[id]++
+				static name[32]
+				get_user_name(id, name, charsmax(name))
+				ColorChat(gCheckDuck[id], GREEN, "[GC]^3 %s^1 : ^3%d^1 Ground Frames (Duck Number^3 %d^1)",name, FramesD[id],Ducks[id])
+				server_print("<%s> <%d> Ground Frames (Duck Number <%d>)", name, FramesD[id], Ducks[id])
+			}
+			FramesD[id]=0
+		}		
 	}
 }

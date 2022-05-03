@@ -254,6 +254,8 @@ public zp_fw_items_select_pre(id, itemid)
 		return ZP_ITEM_NOT_AVAILABLE;
 	}
 	
+	if(zv_get_user_flags(id)&ZV_MAIN)
+		return ZP_ITEM_AVAILABLE;
 
 	static limit, alive, i
 	alive = 0;
@@ -275,11 +277,14 @@ public zp_fw_items_select_pre(id, itemid)
 		limit=2
 	}
 
+	if(Purchases>=limit)
+	{		
+		zp_items_menu_text_add(fmt("[%d/%d] \r[VIP]",Purchases,limit))
+		return ZP_ITEM_NOT_AVAILABLE
+	}
+	
 	zp_items_menu_text_add(fmt("[%d/%d]",Purchases,limit))
 
-	if(Purchases>=limit)
-		return ZP_ITEM_NOT_AVAILABLE
-	
 	return ZP_ITEM_AVAILABLE
 }
 
@@ -307,7 +312,31 @@ public zp_fw_items_select_post(player, itemid)
 	if(itemid != g_itemid)
 		return;
 	
-	Purchases++;
+	static limit, alive, i
+	alive = 0;
+
+	for(i=1;i<33;i++)
+	{
+		if(is_user_alive(i))
+		{
+			alive++
+		}
+	}
+
+	if(alive<23)
+	{
+		limit=1
+	}
+	else
+	{
+		limit=2
+	}
+
+	if(Purchases<limit)
+	{		
+		Purchases++;
+	}
+	
 	drop_violin(player);
 	if(user_has_weapon(player, CSW_GALIL))
 	{

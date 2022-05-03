@@ -18,6 +18,8 @@ new g_szAuthid[33][32]
 
 new reported[33]
 
+new Mapname[64]
+
 new Trie:Timeout;
 
 static const webHook[] = "example";
@@ -25,6 +27,7 @@ static const webHook[] = "example";
 public plugin_init( )
 {
 	register_plugin("Report System : ZP", "1.0", "zXCaptainXz");
+	get_mapname(Mapname, charsmax(Mapname))
 
 	new ip[20];
 	get_user_ip(0, ip, 21, 1);
@@ -94,6 +97,7 @@ public report_reason(id)
 		Discord_AddField("Reason", reason);
 		Discord_AddField("Reporter Name", name);
 		Discord_AddField("Reporter SteamID", g_szAuthid[id]);
+		Discord_AddField("Mapname", Mapname)
 		Discord_SendMessage(webHook);
     }
 
@@ -174,6 +178,7 @@ public cmdReport(id, level, cid)
 		Discord_AddField("Reason", reason);
 		Discord_AddField("Reporter Name", name);
 		Discord_AddField("Reporter SteamID", g_szAuthid[id]);
+		Discord_AddField("Mapname", Mapname)
 		Discord_SendMessage(webHook);
     }
 	
@@ -351,7 +356,7 @@ public ReasonsMenuHandler(id, menu, item) {
 	}
 
 	menu_destroy(menu);
-	return PLUGIN_CONTINUE;
+	return PLUGIN_HANDLED;
 }
 
 public CheatMenu(id)
@@ -390,7 +395,7 @@ public CheatMenuHandler(id, menu, item) {
 	menu_item_getinfo(menu, item, dummy[0], dummy, charsmax(dummy), reason, charsmax(reason), dummy[0])
 	SendCall(id, reason)
 	menu_destroy(menu);
-	return PLUGIN_CONTINUE;
+	return PLUGIN_HANDLED;
 }
 public GeneralMenu(id)
 {	
@@ -427,7 +432,7 @@ public GeneralMenuHandler(id, menu, item) {
 	SendCall(id, reason)
 
 	menu_destroy(menu);
-	return PLUGIN_CONTINUE;
+	return PLUGIN_HANDLED;
 }
 
 public ZPMenu(id)
@@ -464,7 +469,7 @@ public ZPMenuHandler(id, menu, item) {
 	SendCall(id, reason)
 
 	menu_destroy(menu);
-	return PLUGIN_CONTINUE;
+	return PLUGIN_HANDLED;
 }
 
 public SendCall(id, const reason[64]) {
@@ -487,6 +492,7 @@ public SendCall(id, const reason[64]) {
 		Discord_AddField("Reason", reason);
 		Discord_AddField("Reporter Name", name);
 		Discord_AddField("Reporter SteamID", g_szAuthid[id]);
+		Discord_AddField("Mapname", Mapname)
 		Discord_SendMessage(webHook);
     }
 
