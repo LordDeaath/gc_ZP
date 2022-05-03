@@ -28,7 +28,7 @@ new balrog7_V_MODEL[] ={"models/v_balrog7.mdl"}
 new balrog7_P_MODEL[] ={"models/p_balrog7.mdl"}
 new balrog7_W_MODEL[] ={"models/w_balrog7.mdl"}
 
-new cvar_dmg_balrog7;
+new cvar_dmg_balrog7, cvar_dmg_balrog7_normal;
 new cvar_recoil_balrog7;
 new g_itemid_balrog7,g_itemid_vip;
 new cvar_clip_balrog7;
@@ -64,7 +64,8 @@ public plugin_init()
 	RegisterHam(Ham_Item_AddToPlayer, "weapon_m249", "fw_AddToPlayer");
 	
 	
-	cvar_dmg_balrog7 = register_cvar("zp_balrog7_dmg", "2.0");
+	cvar_dmg_balrog7 = register_cvar("zp_balrog7_dmg_hs", "2.0");
+	cvar_dmg_balrog7_normal = register_cvar("zp_balrog7_dmg", "2.0");
 	cvar_recoil_balrog7 = register_cvar("zp_balrog7_recoil", "0.85");
 	cvar_clip_balrog7 = register_cvar("zp_balrog7_clip", "120");
 	cvar_spd_balrog7 = register_cvar("zp_balrog7_shot_speed", "0.115");
@@ -326,7 +327,7 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage,bits)
 		if (get_pdata_int( victim , m_LastHitGroup ) == HIT_HEAD)
 			SetHamParamFloat(4, damage * get_pcvar_float(cvar_dmg_balrog7));
 		else
-			SetHamParamFloat(4, damage * 3.0);
+			SetHamParamFloat(4, damage * get_pcvar_float(cvar_dmg_balrog7) * get_pcvar_float(cvar_dmg_balrog7_normal));
 	}
 	return HAM_IGNORED;
 }
@@ -535,4 +536,3 @@ stock UTIL_PlayWeaponAnimation(const Player, const Sequence)
 	write_byte(pev(Player, pev_body))
 	message_end()
 }
-
