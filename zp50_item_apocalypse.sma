@@ -25,7 +25,7 @@
 native zp_is_blind(id)
 native zp_is_nvg_active(id);
 native zp_apocalypse_icon_set();
-native zp_nade_bought();
+//native zp_nade_bought();
 // native zv_get_bought(id);
 native zp_items_bought_get(id);
 
@@ -100,11 +100,11 @@ public zp_fw_items_select_pre(id, itemid)
 		return ZP_ITEM_NOT_AVAILABLE
 	}
 
-	if(zp_nade_bought())
-	{
-		zp_items_menu_text_add("(Bought Infection Bomb)")
-		return ZP_ITEM_NOT_AVAILABLE
-	}
+	// if(zp_nade_bought())
+	// {
+	// 	zp_items_menu_text_add("(Bought Infection Bomb)")
+	// 	return ZP_ITEM_NOT_AVAILABLE
+	// }
 	
 	new Text[32];
 	format(Text, charsmax(Text), "[0/1]");
