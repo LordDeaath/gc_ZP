@@ -116,8 +116,14 @@ public plugin_natives()
 {
     register_native("give_blind_bomb","native_give_blind_bomb",1);
     register_native("zp_blind_set_cost","native_blind_set_cost")
+    register_native("zp_is_blind", "native_is_blind", 1)
     set_module_filter("module_filter")
     set_native_filter("native_filter")
+}
+
+public native_is_blind(id)
+{
+    return task_exists(id+TASK_AFFECT)
 }
 
 public native_blind_set_cost(plugin,params)
@@ -130,6 +136,8 @@ public native_blind_set_cost(plugin,params)
         case 1: set_param_byref(2, 40)
         case 2: set_param_byref(2, 50)
     }
+    //set_param_byref(2, ((Purchases[get_param(1)]<2?Purchases[get_param(1)]:2)+2) * get_param_byref(2)/2)
+
     return true;
 }
 
