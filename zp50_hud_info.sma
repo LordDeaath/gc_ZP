@@ -48,8 +48,10 @@ native crxranks_get_max_levels();
 
 new Float:g_flGameTime[33], g_iFrames[33], g_FrameRate[33];
 
+#if defined FPS_LIMIT
 new bool:Steam[33]
 new Warn[33];
+#endif
 
 const Float:HUD_SPECT_X = 0.6
 const Float:HUD_SPECT_Y = 0.8
@@ -153,6 +155,7 @@ public client_PreThink(this)
 	g_iFrames[this] = 0;
 	g_flGameTime[this] = flGameTime;
 
+	#if defined FPS_LIMIT
 	if(g_FrameRate[this]>105)
 	{
 		client_cmd(this, "fps_override 0")
@@ -173,9 +176,11 @@ public client_PreThink(this)
 	{
 		Warn[this]=0;
 	}
+	#endif
 
 }
 
+#if defined FPS_LIMIT
 public cvar_query_callback(id, const cvar[], const value[], const param[])
 {
 	if(is_user_alive(id)&&str_to_num(value)>100)
@@ -216,11 +221,14 @@ public second_query(id)
 {
 	query_client_cvar(id, "fps_max", "cvar_query_callback", 1, {1})
 }
+#endif
+
 
 public client_putinserver(id)
 {
 	if (!is_user_bot(id))
 	{
+		#if defined FPS_LIMIT
 		Warn[id] = 0;
 		client_cmd(id, "fps_override 0");
 		if(is_user_steam(id))
@@ -234,7 +242,7 @@ public client_putinserver(id)
 			client_cmd(id, "fps_max 100");
 			client_cmd(id, "fps_modem 100");
 		}
-		
+		#endif
 		// Set the custom HUD display task
 		if(zp_fps_get_user_flags(id)&FPS_HUD_MAIN)
 			return;
