@@ -98,19 +98,30 @@ stock bool:is_hull_vacant2(const Float:origin[3], hull,id) {
 	{
 		return true
 	} 	
-
-	id = get_tr2(tr, TR_pHit)
-	if(is_user_alive(id))
+	static id2
+	id2 = get_tr2(tr, TR_pHit)
+	if(is_user_alive(id2))
 	{
-		if(get_user_noclip(id)||(pev(id,pev_solid) == SOLID_NOT))
+		if(get_user_noclip(id2)||(pev(id2,pev_solid) == SOLID_NOT))
 		{
 			return true;
 		}
 		static Float: origin2[3]
-		pev(id, pev_origin, origin2)
+		pev(id2, pev_origin, origin2)
+
 		// if(origin[0]-origin2[0]==32.0||origin[0]-origin2[0]==-32.0||origin[1]-origin2[1]==32.0||origin[1]-origin2[1]==-32.0)
 		if(origin[0]-origin2[0]==-32.0||origin[1]-origin2[1]==-32.0)
-			return true;
+		{
+			static oldsolid
+			oldsolid = pev(id2, pev_solid)
+			set_pev(id2, pev_solid, SOLID_NOT)
+			engfunc(EngFunc_TraceHull, origin, origin, 0, hull, id)
+			set_pev(id2, pev_solid, oldsolid)
+			if (!get_tr2(tr, TR_StartSolid) || !get_tr2(tr, TR_AllSolid))//get_tr2(tr2, TR_InOpen))
+			{
+				return true
+			} 	
+		}
 	}
 	
 	return false
