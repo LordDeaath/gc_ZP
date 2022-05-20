@@ -64,15 +64,20 @@ public actionFlaggingMenu(id,menu,item) {
 		return PLUGIN_HANDLED
 	}
 	
-	new acc,szInfo[3],szText[128],callb
+	new acc,szInfo[8],szText[128],callb
 	menu_item_getinfo(menu,item,acc,szInfo,charsmax(szInfo),szText,charsmax(szText),callb)
 	
-	new pid=str_to_num(szInfo)
+	new pid = find_player("k", str_to_num(szInfo))
+	if(!pid)
+	{
+		client_print(id, print_chat, "[AMXBANS] Player has disconnected!")
+		return PLUGIN_HANDLED
+	}
 	
 	copy(g_choicePlayerName[id],charsmax(g_choicePlayerName[]),g_PlayerName[pid])
 	get_user_authid(pid,g_choicePlayerAuthid[id],charsmax(g_choicePlayerAuthid[]))
 	get_user_ip(pid,g_choicePlayerIp[id],charsmax(g_choicePlayerIp[]),1)
-	g_choicePlayerId[id]=pid
+	g_choicePlayerId[id]= str_to_num(szInfo)
 	
 	if(get_pcvar_num(pcvar_debug) >= 2)
 		log_amx("[AMXBans FlagPlayerMenu %d] %d choice: %d | %s | %s | %d",menu,id,g_choicePlayerName[id],g_choicePlayerAuthid[id],g_choicePlayerIp[id],g_choicePlayerId[id])
@@ -88,18 +93,25 @@ public actionFlaggingMenu(id,menu,item) {
 public cmdUnflagMenu(id,level,cid) {
 	if (!cmd_access(id,level,cid,1))
 		return PLUGIN_HANDLED
-	
+
+	new pid = find_player("k", g_choicePlayerId[id])
+	if(!pid)
+	{
+		client_print(id, print_chat, "[AMXBANS] Player has disconnected!")
+		return PLUGIN_HANDLED
+	}
+
 	new menu = menu_create("menu_unflagplayer","actionUnflagMenu")
 	
 	MenuSetProps(id,menu,"UNFLAG_MENU")
 	
 	new szDisplay[128],szTime[64]
 	
-	get_flagtime_string(id,g_flaggedTime[g_choicePlayerId[id]],szTime,charsmax(szTime),1)
+	get_flagtime_string(id,g_flaggedTime[pid],szTime,charsmax(szTime),1)
 	if(g_coloredMenus)
-		format(szTime,charsmax(szTime),"\y(%s: %s)\w",szTime,g_flaggedReason[g_choicePlayerId[id]])
+		format(szTime,charsmax(szTime),"\y(%s: %s)\w",szTime,g_flaggedReason[pid])
 	else
-		format(szTime,charsmax(szTime),"(%s: %s)",szTime,g_flaggedReason[g_choicePlayerId[id]])
+		format(szTime,charsmax(szTime),"(%s: %s)",szTime,g_flaggedReason[pid])
 	
 	formatex(szDisplay,charsmax(szDisplay),"%L %s",id,"UNFLAG_PLAYER",szTime)
 	menu_additem(menu,szDisplay,"1",0)
@@ -259,7 +271,14 @@ UnflagPlayer(id,announce=0) {
 /*******************************************************************************************************************/
 public _FlagPlayer(failstate, Handle:query, error[], errnum, data[], size) {
 	new id=data[0]
-	
+
+	new pid = find_player("k", g_choicePlayerId[id])
+	if(!pid)
+	{
+		client_print(id, print_chat, "[AMXBANS] Player has disconnected!")
+		return PLUGIN_HANDLED
+	}
+
 	if (failstate) {
 		client_print(id,print_chat,"[AMXBans] %L",data[0],"FLAGG_MESS_ERROR",g_choicePlayerName[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",data[0],"FLAGG_MESS_ERROR",g_choicePlayerName[id])
@@ -271,22 +290,29 @@ public _FlagPlayer(failstate, Handle:query, error[], errnum, data[], size) {
 	if(SQL_AffectedRows(query)) {
 		client_print(id,print_chat,"[AMXBans] %L",data[0],"FLAGG_MESS",g_choicePlayerName[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",data[0],"FLAGG_MESS",g_choicePlayerName[id])
-		g_being_flagged[g_choicePlayerId[id]]=true
-		g_flaggedTime[g_choicePlayerId[id]]=g_choiceTime[id]
-		copy(g_flaggedReason[g_choicePlayerId[id]],charsmax(g_flaggedReason[]),g_choiceReason[id])
+		g_being_flagged[pid]=true
+		g_flaggedTime[pid]=g_choiceTime[id]
+		copy(g_flaggedReason[pid],charsmax(g_flaggedReason[]),g_choiceReason[id])
 		
 		new ret
-		ExecuteForward(MFHandle[Player_Flagged],ret,g_choicePlayerId[id],(g_choiceTime[id]*60),g_choiceReason[id])
+		ExecuteForward(MFHandle[Player_Flagged],ret,pid,(g_choiceTime[id]*60),g_choiceReason[id])
 	} else { 
 		client_print(id,print_chat,"[AMXBans] %L",data[0],"FLAGG_MESS_ERROR",g_choicePlayerName[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",data[0],"FLAGG_MESS_ERROR",g_choicePlayerName[id])
-		g_being_flagged[g_choicePlayerId[id]]=false
+		g_being_flagged[pid]=false
 	}
 	return PLUGIN_HANDLED
 }
 public _UnflagPlayer(failstate, Handle:query, error[], errnum, data[], size) {
 	new id=data[0]
 	
+	new pid = find_player("k", g_choicePlayerId[id])
+	if(!pid)
+	{
+		client_print(id, print_chat, "[AMXBANS] Player has disconnected!")
+		return PLUGIN_HANDLED
+	}
+
 	if (failstate) {
 		client_print(id,print_chat,"[AMXBans] %L",data[0],"UN_FLAGG_MESS_ERROR",g_choicePlayerName[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",data[0],"UN_FLAGG_MESS_ERROR",g_choicePlayerName[id])
@@ -300,9 +326,9 @@ public _UnflagPlayer(failstate, Handle:query, error[], errnum, data[], size) {
 			client_print(id,print_chat,"[AMXBans] %L",id,"UN_FLAGG_MESS",g_choicePlayerName[id])
 			//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"UN_FLAGG_MESS",g_choicePlayerName[id])
 		}
-		g_being_flagged[g_choicePlayerId[id]]=false
+		g_being_flagged[pid]=false
 		new ret
-		ExecuteForward(MFHandle[Player_UnFlagged],ret,g_choicePlayerId[id])
+		ExecuteForward(MFHandle[Player_UnFlagged],ret,pid)
 	} else { 
 		client_print(id,print_chat,"[AMXBans] %L",data[0],"UN_FLAGG_MESS_ERROR",g_choicePlayerName[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",data[0],"UN_FLAGG_MESS_ERROR",g_choicePlayerName[id])

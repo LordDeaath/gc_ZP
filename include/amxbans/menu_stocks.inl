@@ -64,13 +64,13 @@ stock MenuSetProps(id,menu,title[]) {
 
 stock MenuGetPlayers(menu,callback) {
 	new plnum = get_maxplayers()
-	new szID[3],count
+	new szID[8],count
 	
 	for(new i=1;i <= plnum;i++) {
 		if(!is_user_connected(i)) continue
 		count++
 		get_user_name(i,g_PlayerName[i],charsmax(g_PlayerName[]))
-		num_to_str(i,szID,charsmax(szID))
+		num_to_str(get_user_userid(i),szID,charsmax(szID))
 		menu_additem(menu,g_PlayerName[i],szID,0,callback)
 	}
 }
@@ -175,12 +175,12 @@ stock MenuGetFlagtime(id,menu) {
 		menu_additem(menu,szDisplay,szTime)
 	}
 }
-/*******************************************************************************************************************/
+
 public callback_MenuGetPlayers(id,menu,item) {
-	new acc,szInfo[3],szText[128],callb
-	menu_item_getinfo(menu,item,acc,szInfo,2,szText,127,callb)
+	new acc,szInfo[8],szText[128],callb
+	menu_item_getinfo(menu,item,acc,szInfo,charsmax(szInfo),szText,127,callb)
 	
-	new pid=str_to_num(szInfo)
+	new pid = find_player("k", str_to_num(szInfo))
 	
 	new szStatus[64]
 	if(g_coloredMenus) {
@@ -246,7 +246,7 @@ public callback_MenuBanType(id,menu,item) {
 	
 	return ITEM_ENABLED
 }
-/*******************************************************************************************************************/
+
 stock get_bantime_string(id,btime,text[],len) {
 	if(btime <=0 ) {
 		formatex(text,len,"%L",id,"BAN_PERMANENT")
@@ -273,7 +273,7 @@ stock get_flagtime_string(id,btime,text[],len,without=0) {
 		}
 	}
 }
-/*******************************************************************************************************************/
+
 /*
 user_viewing_menu() {
 	new menu,newmenu,menupage
@@ -294,7 +294,7 @@ user_viewing_menu() {
 	}
 }
 */
-/*******************************************************************************************************************/
+
 get_ban_type(type[],ip[]) {
 	//if(contain(steamid,"STEAM_0:") == 0 && contain(steamid,"STEAM_0:2") == -1) {
 	//formatex(type,len,"S")
@@ -304,7 +304,7 @@ get_ban_type(type[],ip[]) {
 	if(equal(ip,"127.0.0.1") && equal(type,"SI")) return 0
 	return 1
 }
-/*******************************************************************************************************************/
+
 public setCustomBanReason(id,level,cid)
 {
 	if (!cmd_access(id,level,cid,1)) {

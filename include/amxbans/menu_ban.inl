@@ -114,7 +114,7 @@ public actionBanMenu(id,menu,item) {
 		return PLUGIN_HANDLED
 	}
 	
-	new acc,szInfo[3],szText[128],callb
+	new acc,szInfo[8],szText[128],callb
 	menu_item_getinfo(menu,item,acc,szInfo,charsmax(szInfo),szText,charsmax(szText),callb)
 	
 	if(szInfo[0]=='t') {
@@ -125,9 +125,9 @@ public actionBanMenu(id,menu,item) {
 		return PLUGIN_HANDLED
 	}
 		
-	new pid=str_to_num(szInfo)
+	new pid = find_player("k", str_to_num(szInfo))
 	
-	if(!is_user_connected(pid)) {
+	if(!pid) {
 		client_print(id,print_chat,"%L",id,"PLAYER_LEAVED",g_PlayerName[pid])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"PLAYER_LEAVED",g_PlayerName[pid])
 		
@@ -139,7 +139,7 @@ public actionBanMenu(id,menu,item) {
 	copy(g_choicePlayerName[id],charsmax(g_choicePlayerName[]),g_PlayerName[pid])
 	get_user_authid(pid,g_choicePlayerAuthid[id],charsmax(g_choicePlayerAuthid[]))
 	get_user_ip(pid,g_choicePlayerIp[id],charsmax(g_choicePlayerIp[]),1)
-	g_choicePlayerId[id]=pid
+	g_choicePlayerId[id] = str_to_num(szInfo)
 	
 	if(get_pcvar_num(pcvar_debug) >= 2)
 		log_amx("[AMXBans PlayerMenu %d] %d choice: %d | %s | %s | %d",menu,id,g_choicePlayerName[id],g_choicePlayerAuthid[id],g_choicePlayerIp[id],g_choicePlayerId[id])
@@ -264,8 +264,17 @@ public reason_check(id, reason) {
 	}
 	else
 	{
-		get_user_authid(g_choicePlayerId[id], player_steamid, 34)
-		get_user_ip(g_choicePlayerId[id], player_ip, 21, 1)
+		new pid = find_player("k", g_choicePlayerId[id])
+		
+		if(!pid) {
+			client_print(id,print_chat,"%L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+			//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+			
+			client_cmd(id,"amx_bandisconnectedmenu")
+			return PLUGIN_HANDLED
+		}
+		get_user_authid(pid, player_steamid, 34)
+		get_user_ip(pid, player_ip, 21, 1)
 	}
 	
 	formatex(pquery, charsmax(pquery), "SELECT COUNT(*) FROM `%s%s` WHERE ( player_id='%s' OR player_ip='%s' ) AND ban_reason LIKE '%%%s%%'",g_dbPrefix, tbl_bans, player_steamid, player_ip, MatchString[reason])	

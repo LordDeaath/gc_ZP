@@ -46,16 +46,16 @@ public cmdMenuBan(id) {
 	if(!id) return PLUGIN_HANDLED
 	
 	g_ban_type[id]="S"
-	
-	if(g_being_banned[g_choicePlayerId[id]]) {
+	new pid = find_player("k", g_choicePlayerId[id])
+	if(g_being_banned[pid]) {
 		client_print(id,print_chat,"[AMXBans] %L", LANG_PLAYER, "BLOCKING_DOUBLEBAN", g_choicePlayerName[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 Blocking doubleban from <%s>", g_choicePlayerName[id])
 	}
-	g_being_banned[g_choicePlayerId[id]]=true
+	g_being_banned[pid]=true
 	
 	if(!get_ban_type(g_ban_type[id],g_choicePlayerIp[id])) {
 		log_amx("[AMXBans ERROR cmdMenuBan] Steamid / IP Invalid! Bantype: <%s> | Authid: <%s> | IP: <%s>",g_ban_type[id],g_choicePlayerAuthid[id],g_choicePlayerIp[id])
-		g_being_banned[g_choicePlayerId[id]]=false
+		g_being_banned[pid]=false
 		return PLUGIN_HANDLED
 	}
 	
@@ -87,7 +87,14 @@ public cmdMenuBan(id) {
 public _cmdMenuBan(failstate, Handle:query, error[], errnum, data[], size)
 {
 	new id = data[0]
-	new pid = data[1]
+	new pid = find_player("k", data[1])
+	if(!pid) {
+		client_print(id,print_chat,"%L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+		//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+		
+		client_cmd(id,"amx_bandisconnectedmenu")
+		return PLUGIN_HANDLED
+	}
 	
 	if ( get_pcvar_num(pcvar_debug) >= 1 )
 		log_amx("[AMXBans cmdMenuBan function 2]Playerid: %d", pid)
@@ -102,7 +109,7 @@ public _cmdMenuBan(failstate, Handle:query, error[], errnum, data[], size)
 	if (SQL_NumResults(query)) {
 		client_print(id,print_console,"[AMXBANS] %L",id,"ALREADY_BANNED", g_choicePlayerAuthid[id], g_choicePlayerIp[id])
 		//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"ALREADY_BANNED", g_choicePlayerAuthid[id], g_choicePlayerIp[id])
-		g_being_banned[id] = false
+		g_being_banned[pid] = false
 		return PLUGIN_HANDLED
 	}
 	
@@ -134,7 +141,6 @@ public _cmdMenuBan(failstate, Handle:query, error[], errnum, data[], size)
 	
 	new data[3]
 	data[0] = id
-	data[1] = g_choicePlayerId[id]
 	SQL_ThreadQuery(g_SqlX, "insert_bandetails", pquery, data, 3)
 	
 	return PLUGIN_HANDLED
@@ -394,13 +400,22 @@ public cmd_ban_(failstate, Handle:query, error[], errnum, data[], size)
 	
 	return PLUGIN_HANDLED
 }
-/*******************************************************************************************************************/
-/*******************************************************************************************************************/
-/*******************************************************************************************************************/
+
+
+
 public insert_bandetails(failstate, Handle:query, error[], errnum, data[], size)
 {
 	new id = data[0]
 	
+	new pid = find_player("k", g_choicePlayerId[id])
+	if(!pid) {
+		client_print(id,print_chat,"%L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+		//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+		
+		client_cmd(id,"amx_bandisconnectedmenu")
+		return PLUGIN_HANDLED
+	}
+
 	if ( get_pcvar_num(pcvar_debug) >= 1 )
 		log_amx("[AMXBans cmdBan function 5]Playerid: %d",g_choicePlayerId[id])
 	
@@ -416,18 +431,18 @@ public insert_bandetails(failstate, Handle:query, error[], errnum, data[], size)
 	//break if the banned player should not be kicked at the moment
 	if(g_menuban_type[id]==1) return PLUGIN_HANDLED
 	if(g_menuban_type[id]==2) {
-		g_nextround_kick[g_choicePlayerId[id]]=true
-		//g_nextround_kick_time[g_choicePlayerId[id]]=g_choiceTime[id]
-		g_nextround_kick_bid[g_choicePlayerId[id]]=bid
-		//copy(g_nextround_kick_Reason[g_choicePlayerId[id]],charsmax(g_nextround_kick_Reason[]),g_choiceReason[id])
+		g_nextround_kick[pid]=true
+		//g_nextround_kick_time[pid]=g_choiceTime[id]
+		g_nextround_kick_bid[pid]=bid
+		//copy(g_nextround_kick_Reason[pid],charsmax(g_nextround_kick_Reason[]),g_choiceReason[id])
 		
 		return PLUGIN_HANDLED
 	}
 	
-	select_amxbans_motd(id,g_choicePlayerId[id],bid)
+	select_amxbans_motd(id,pid,bid)
 	return PLUGIN_HANDLED
 }
-/*******************************************************************************************************************/
+
 public select_amxbans_motd(id,player,bid) {
 	if ( get_pcvar_num(pcvar_debug) >= 1 )
 		log_amx("[AMXBans cmdBan function 5]Bid: %d", bid)
