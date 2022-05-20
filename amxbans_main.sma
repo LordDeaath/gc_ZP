@@ -65,24 +65,20 @@ new const PLUGINVERSION[] = "6.13";
 // 16k * 4 = 64k stack size
 #pragma dynamic 16384 		// Give the plugin some extra memory to use
 
-#define PROTECTION "5.161.56.165"
+// #define PROTECTION "5.161.56.165"
 
 public plugin_init()
 {
 	register_plugin(PLUGINNAME, PLUGINVERSION, PLUGINAUTHOR)
 	
-	new IP_PROTECT[20];
-	get_user_ip(0, IP_PROTECT, 21, 1);
+	// new IP_PROTECT[20];
+	// get_user_ip(0, IP_PROTECT, 21, 1);
 
-	if(!equal(IP_PROTECT, PROTECTION)) 
-	{
-		server_print("Server IP has no rights to use this plugin!")
-		pause("d");
-	}
-	else 
-	{
-		server_print("Server IP have the rights to use this plugin!")
-	}
+	// if(!equal(IP_PROTECT, PROTECTION)) 
+	// {
+	// 	server_print("Server IP has no rights to use this plugin!")
+	// 	pause("d");
+	// }
 
 	register_cvar("amxbans_version", PLUGINVERSION, FCVAR_SERVER|FCVAR_EXTDLL|FCVAR_UNLOGGED|FCVAR_SPONLY)
 	
