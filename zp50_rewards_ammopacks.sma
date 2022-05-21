@@ -8,38 +8,34 @@
 	terms of the GNU General Public License. Check ZP_ReadMe.txt for details.
 	
 ================================================================================*/
-
 #include <amxmodx>
 #include <hamsandwich>
 #include <cs_ham_bots_api>
 #include <zp50_gamemodes>
 #include <zp50_ammopacks>
 #include <zmvip>
+#include <dhudmessage>
 
 #define REWARD_INFECT 5
 #define REWARD_KILL 3
 #define REWARD_DEATH 1
 #define REWARD_BOSS_KILL 5
 #define REWARD_RACE_KILL 1
-
 #define DAMAGE_NORMAL 500.0
 #define DAMAGE_ARMA 1000.0
 #define DAMAGE_ZBOSS 250.0
 #define DAMAGE_SURVIVOR 65.0
 #define DAMAGE_KNIFER_PLASMA 15.0
-
 #define REWARD_INFECT_VIP 8
 #define REWARD_KILL_VIP 5
 #define REWARD_DEATH_VIP 3
 #define REWARD_BOSS_KILL_VIP 8
 #define REWARD_RACE_KILL_VIP 2
-
 #define DAMAGE_NORMAL_VIP 300.0
 #define DAMAGE_ARMA_VIP 600.0
 #define DAMAGE_ZBOSS_VIP 150.0
 #define DAMAGE_SURVIVOR_VIP 40.0
 #define DAMAGE_KNIFER_PLASMA_VIP 10.0
-
 native zp_class_survivor_get(id);
 native zp_class_sniper_get(id);
 native zp_class_knifer_get(id);
@@ -48,23 +44,18 @@ native zp_class_nemesis_get(id);
 native zp_class_dragon_get(id);
 native zp_class_nightcrawler_get(id);
 native zp_class_predator_get(id);
-
 new Float:DamageDealt[33]
-
 new Float:DamageRequired
 new Float:DamageRequiredVIP
-
+new Float:DamageRequiredZombi
 new bool:InfectReward;
 new bool:RaceReward;
 new bool:ZombieReward;
 new bool:HumanReward;
-
 new bool:Boss[33]
 new bool:VIP[33]
 new bool:Zombie[33]
-
 new YPos[33]
-
 public plugin_init()
 {
 	register_plugin("[ZP] Rewards: Ammo Packs", ZP_VERSION_STRING, "ZP Dev Team")
@@ -74,30 +65,25 @@ public plugin_init()
 	RegisterHam(Ham_Killed, "player", "fw_PlayerKilled_Post", 1)
 	RegisterHamBots(Ham_Killed, "fw_PlayerKilled_Post", 1)
 }
-
 public plugin_natives()
 {
 	register_native("zp_get_damage","native_get_damage",1)
 	register_native("zp_get_damage_required","native_get_damage_required",1)
 	register_native("zp_show_reward", "native_show_reward")
 }
-
 public native_get_damage(id)
 {
 	return floatround(DamageDealt[id]);
 }
-
 public native_get_damage_required(id)
 {
 	if(!VIP[id])
 	{
 		return floatround(DamageRequired);
 	}
-
 	return floatround(DamageRequiredVIP);
 }
 new Infection,Multi,Swarm,Plague,Nemesis,Dragon,Predator,Nightcrawler,Survivor,Knifer,Plasma,Race, Armageddon
-
 public plugin_cfg()
 {
 	Infection = zp_gamemodes_get_id("Infection Mode")
@@ -114,7 +100,6 @@ public plugin_cfg()
 	Race = zp_gamemodes_get_id("Nemesis Race Mode");
 	Armageddon = zp_gamemodes_get_id("Armageddon Mode");
 }
-
 public zp_fw_gamemodes_end()
 {
 	DamageRequired = 0.0
@@ -125,20 +110,22 @@ public zp_fw_gamemodes_end()
 	InfectReward=false;
 	arrayset(_:DamageDealt, _:0.0, sizeof(DamageDealt))
 }
-
 public zp_fw_gamemodes_start(gm)
 {	
 	if(gm==Infection||gm==Multi)
 	{
 		DamageRequired = DAMAGE_NORMAL
-		DamageRequiredVIP = DAMAGE_NORMAL_VIP		
+		DamageRequiredVIP = DAMAGE_NORMAL_VIP
+		DamageRequiredZombi = 2000.0
 		HumanReward=true;
 		InfectReward=true;
+		
 	}
 	else if(gm==Swarm||gm==Plague)
 	{
 		DamageRequired = DAMAGE_ZBOSS
-		DamageRequiredVIP = DAMAGE_ZBOSS_VIP	
+		DamageRequiredVIP = DAMAGE_ZBOSS_VIP
+		DamageRequiredZombi = 1500.0
 		HumanReward=true;
 		ZombieReward=true;
 	}
@@ -159,6 +146,7 @@ public zp_fw_gamemodes_start(gm)
 	{
 		DamageRequired = DAMAGE_SURVIVOR
 		DamageRequiredVIP = DAMAGE_SURVIVOR_VIP
+		DamageRequiredZombi = 1500.0
 		ZombieReward=true;
 	}
 	else if(gm==Knifer||gm==Plasma)
@@ -173,7 +161,6 @@ public zp_fw_gamemodes_start(gm)
 		RaceReward=true;
 	}
 }
-
 public client_putinserver(id)
 {
 	if(zv_get_user_flags(id)&ZV_MAIN)
@@ -188,7 +175,6 @@ public client_putinserver(id)
 	Boss[id]=false;
 	DamageDealt[id]=0.0
 }
-
 public zp_fw_core_infect_post(id, attacker)
 {	
 	Zombie[id]=true;
@@ -200,12 +186,10 @@ public zp_fw_core_infect_post(id, attacker)
 	{
 		Boss[id]=false;
 	}
-
 	if (is_user_connected(attacker) && attacker != id)
 	{		
 		if(!InfectReward)
 			return;
-
 		if(!VIP[attacker])
 		{
 			zp_ammopacks_set(attacker, zp_ammopacks_get(attacker) + REWARD_INFECT)
@@ -218,7 +202,6 @@ public zp_fw_core_infect_post(id, attacker)
 		}
 	}
 }
-
 public zp_fw_core_cure_post(id)
 {
 	Zombie[id]=false;
@@ -231,14 +214,28 @@ public zp_fw_core_cure_post(id)
 		Boss[id]=false;
 	}
 }
-
 // Ham Take Damage Post Forward
 public fw_TakeDamage_Post(victim, inflictor, attacker, Float:damage, damage_type)
 {
 	// Non-player damage or self damage
-	if (victim == attacker || !is_user_alive(attacker))
+	if (victim == attacker || !is_user_alive(attacker) || zp_core_is_zombie(attacker))
 		return;
+	if(Zombie[victim])
+	{
+		if(DamageRequiredZombi)
+		{
+			DamageDealt[victim] += damage
+			if(DamageDealt[victim] >= DamageRequiredZombi)
+			{
+				static AP
+				AP = floatround(DamageDealt[victim] / DamageRequiredZombi, floatround_floor)
+				zp_ammopacks_set(victim, zp_ammopacks_get(victim) + AP)
+				show_reward(victim, AP, "[TRY]")
+				DamageDealt[victim]-=DamageRequiredZombi * AP;
+			}			
 	
+		}
+	}
 	if((Zombie[attacker] &&ZombieReward && !Zombie[victim])||(!Zombie[attacker]&&HumanReward&&Zombie[victim]))
 	{
 		if(DamageRequired)
@@ -268,7 +265,6 @@ public fw_TakeDamage_Post(victim, inflictor, attacker, Float:damage, damage_type
 		}		
 	}
 }
-
 // Ham Player Killed Post Forward
 public fw_PlayerKilled_Post(victim, attacker, shouldgib)
 {
@@ -345,7 +341,6 @@ public fw_PlayerKilled_Post(victim, attacker, shouldgib)
 		}
 	}
 }
-
 public native_show_reward(pluginid, num_params)
 {
 	new id = get_param(1)
@@ -354,7 +349,6 @@ public native_show_reward(pluginid, num_params)
 	get_string(3, reason, charsmax(reason))
 	show_reward(id, amount, reason);
 }
-
 public show_reward(id, amount, const reason[])
 {
 	static temp[16], i;
@@ -368,6 +362,5 @@ public show_reward(id, amount, const reason[])
 		YPos[id]=0;
 	}
 	set_dhudmessage(0, 255, 0, -1.0, 0.7,2,0.5,0.5,0.1,0.1)
-
 	show_dhudmessage(id, "%s+%d AmmoPack%s %s",temp,amount,amount>1?"s":"",reason)
 }
