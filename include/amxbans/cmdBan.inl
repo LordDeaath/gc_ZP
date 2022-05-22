@@ -213,28 +213,28 @@ public cmdBan(id, level, cid)
 	}
 
 	// Try to find the player that should be banned
-	g_choicePlayerId[id] = locate_player(id, g_ident)
+	new pid = locate_player(id, g_ident)
 
 	// Player is a BOT or has immunity
-	if (g_choicePlayerId[id] == -1)
+	if (pid == -1)
 		return PLUGIN_HANDLED
 		
-	if(g_being_banned[g_choicePlayerId[id]]) {
+	if(g_being_banned[pid]) {
 		if ( get_pcvar_num(pcvar_debug) >= 1 )
-			log_amx("[AMXBans Blocking doubleban(g_being_banned)] Playerid: %d BanLenght: %s Reason: %s", g_choicePlayerId[id], g_choiceTime[id], g_choiceReason[id])
+			log_amx("[AMXBans Blocking doubleban(g_being_banned)] Playerid: %d BanLenght: %s Reason: %s", pid, g_choiceTime[id], g_choiceReason[id])
 			
 		return PLUGIN_HANDLED
 	}
 	
-	g_being_banned[g_choicePlayerId[id]] = true
+	g_being_banned[pid] = true
 	
 	if ( get_pcvar_num(pcvar_debug) >= 1 )
-		log_amx("[AMXBans cmdBan function 1]Playerid: %d", g_choicePlayerId[id])
+		log_amx("[AMXBans cmdBan function 1]Playerid: %d", pid)
 
-	if (g_choicePlayerId[id])
+	if (pid)
 	{
-		get_user_authid(g_choicePlayerId[id], g_choicePlayerAuthid[id], 49)
-		get_user_ip(g_choicePlayerId[id], g_choicePlayerIp[id], 29, 1)
+		get_user_authid(pid, g_choicePlayerAuthid[id], 49)
+		get_user_ip(pid, g_choicePlayerIp[id], 29, 1)
 	}
 	else
 	{
@@ -253,7 +253,7 @@ public cmdBan(id, level, cid)
 
 	if(!get_ban_type(g_ban_type[id],g_choicePlayerIp[id])) {
 		log_amx("[AMXBans ERROR cmdBan] Steamid / IP Invalid! Bantype: <%s> | Authid: <%s> | IP: <%s>",g_ban_type[id],g_choicePlayerAuthid[id],g_choicePlayerIp[id])
-		g_being_banned[g_choicePlayerId[id]]=false
+		g_being_banned[pid]=false
 		return PLUGIN_HANDLED
 	}
 	
@@ -277,6 +277,7 @@ public cmdBan(id, level, cid)
 	
 	new data[1]
 	data[0] = id
+	g_choicePlayerId[id] = get_user_userid(pid)
 	SQL_ThreadQuery(g_SqlX, "cmd_ban_", pquery, data, 1)
 	
 	return PLUGIN_HANDLED
