@@ -23,7 +23,70 @@ public plugin_init() {
 	if(LibraryExists("orpheu",LibType_Library))
 		OrpheuRegisterHook(OrpheuGetFunction("PM_CheckStuck"),"OnPM_CheckStuck"); 
 	set_task(0.1,"checkstuck",0,"",0,"b")	
+
+	// register_clcmd("say test1","test1")	
+	// register_clcmd("say test2","test2")	
+	// register_clcmd("say test3","test3")	
+	// register_clcmd("say test4","test4")
 }
+
+// public test1(id)
+// {
+// 	for(new i=1;i<33;i++)
+// 	{
+// 		if(i==id)continue
+// 		if(!is_user_alive(i))continue
+// 		new Float:origin[3]
+// 		pev(i, pev_origin, origin)
+// 		origin[0]+=32.0
+// 		origin[2]-=10.0
+// 		set_pev(id, pev_origin, origin)
+// 	}
+// }
+
+// public test2(id)
+// {
+// 	for(new i=1;i<33;i++)
+// 	{
+// 		if(i==id)continue
+// 		if(!is_user_alive(i))continue
+// 		new Float:origin[3]
+// 		pev(i, pev_origin, origin)
+// 		origin[0]-=32.0
+// 		origin[2]-=10.0
+// 		set_pev(id, pev_origin, origin)
+// 	}
+// }
+
+
+// public test3(id)
+// {
+// 	for(new i=1;i<33;i++)
+// 	{
+// 		if(i==id)continue
+// 		if(!is_user_alive(i))continue
+// 		new Float:origin[3]
+// 		pev(i, pev_origin, origin)
+// 		origin[1]+=32.0
+// 		origin[2]-=10.0
+// 		set_pev(id, pev_origin, origin)
+// 	}
+// }
+
+
+// public test4(id)
+// {
+// 	for(new i=1;i<33;i++)
+// 	{
+// 		if(i==id)continue
+// 		if(!is_user_alive(i))continue
+// 		new Float:origin[3]
+// 		pev(i, pev_origin, origin)
+// 		origin[1]-=32.0
+// 		origin[2]-=10.0
+// 		set_pev(id, pev_origin, origin)
+// 	}
+// }
 
 public OrpheuHookReturn:OnPM_CheckStuck() 
 { 
@@ -116,7 +179,7 @@ stock bool:is_hull_vacant2(const Float:origin[3], hull,id) {
 			static oldsolid
 			oldsolid = pev(id2, pev_solid)
 			set_pev(id2, pev_solid, SOLID_NOT)
-			engfunc(EngFunc_TraceHull, origin, origin, 0, hull, id, tr)
+			engfunc(EngFunc_TraceHull, origin, origin, 0, HULL_HUMAN, id, tr)
 			set_pev(id2, pev_solid, oldsolid)
 			if (!get_tr2(tr, TR_StartSolid) || !get_tr2(tr, TR_AllSolid))//get_tr2(tr2, TR_InOpen))
 			{
