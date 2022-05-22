@@ -286,8 +286,17 @@ public cmd_ban_(failstate, Handle:query, error[], errnum, data[], size)
 {
 	new id = data[0]
 	
+	new pid = find_player("k", g_choicePlayerId[id])
+	if(!pid) {
+		client_print(id,print_chat,"%L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+		//ColorChat(id, RED, "[AMXBans]^x01 %L",id,"PLAYER_LEAVED",g_PlayerName[pid])
+		
+		client_cmd(id,"amx_bandisconnectedmenu")
+		return PLUGIN_HANDLED
+	}
+
 	if ( get_pcvar_num(pcvar_debug) >= 1 )
-		log_amx("[AMXBans cmd_ban_ function 2]Playerid: %d", g_choicePlayerId[id])
+		log_amx("[AMXBans cmd_ban_ function 2]Playerid: %d", pid)
 	
 	new bool:serverCmd = false
 	/* Determine if this was a server command or a command issued by a player in the game */
@@ -304,9 +313,9 @@ public cmd_ban_(failstate, Handle:query, error[], errnum, data[], size)
 	{	
 		if (!SQL_NumResults(query))
 		{
-			if (g_choicePlayerId[id])
+			if (pid)
 			{
-				get_user_name(g_choicePlayerId[id], g_choicePlayerName[id], charsmax(g_choicePlayerName[]))
+				get_user_name(pid, g_choicePlayerName[id], charsmax(g_choicePlayerName[]))
 			}
 			else /* The player was not found in server */
 			{
@@ -394,7 +403,7 @@ public cmd_ban_(failstate, Handle:query, error[], errnum, data[], size)
 				client_print(id,print_console,"[AMXBans] %L",LANG_PLAYER,"ALREADY_BANNED", g_choicePlayerAuthid[id], g_choicePlayerIp[id])
 			// Must make that false to be able to ban another player not on the server
 			// Players that aren't in the server always get id = 0
-			g_being_banned[g_choicePlayerId[id]] = false
+			g_being_banned[pid] = false
 
 		}
 	}
