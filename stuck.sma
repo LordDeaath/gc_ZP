@@ -28,7 +28,52 @@ public plugin_init() {
 	// register_clcmd("say test2","test2")	
 	// register_clcmd("say test3","test3")	
 	// register_clcmd("say test4","test4")
+	// register_clcmd("say test5", "test5")
+	// register_clcmd("say test6", "test6")
 }
+// public test6(id)
+// {		
+// 	new Float:origin[3]
+// 	pev(id, pev_origin, origin)
+// 	client_print(id, print_chat, "%f", origin[0])
+// 	return PLUGIN_HANDLED
+// }
+// public test5(id)
+// {
+// 	new count
+// 	new Float:origin[3]
+// 	pev(id, pev_origin, origin)
+// 	origin[0]-=2*32.03125
+// 	for(new i=1;i<33;i++)
+// 	{
+// 		if(i==id)continue;
+// 		if(!is_user_alive(i))continue;
+// 		switch(count)
+// 		{
+// 			case 0:
+// 			{
+// 				set_pev(i, pev_origin, origin)
+// 			}
+// 			case 1:
+// 			{
+// 				origin[0]+=32.03125
+// 				set_pev(i, pev_origin, origin)
+// 			}
+// 			case 2:
+// 			{
+// 				origin[0]+=32.03125*2
+// 				set_pev(i, pev_origin, origin)
+// 			}
+// 			case 3:
+// 			{				
+// 				origin[0]+=32.03125
+// 				set_pev(i, pev_origin, origin)
+// 			}
+// 		}
+// 		count++
+// 		if(count==4)break;
+// 	}
+// }
 
 // public test1(id)
 // {
@@ -165,17 +210,18 @@ stock bool:is_hull_vacant2(Float:origin[3], hull,id) {
 		static Float: origin2[3]
 		pev(id2, pev_origin, origin2)
 
-		if(origin[0]-origin2[0]==-32.0||origin[1]-origin2[1]==-32.0)
+		if(origin[0]-origin2[0]==-32.0)
 		{
-			static oldsolid
-			oldsolid = pev(id2, pev_solid)
-			set_pev(id2, pev_solid, SOLID_NOT)
-			engfunc(EngFunc_TraceHull, origin, origin, 0, hull, id, tr)			
-			set_pev(id2, pev_solid, oldsolid)
-			if (!get_tr2(tr, TR_StartSolid) || !get_tr2(tr, TR_AllSolid))
-			{								
-				return true;
-			} 				
+			origin2[0]+=0.03125
+			set_pev(id2, pev_origin, origin2)
+			return true;
+		}
+
+		if(origin[1]-origin2[1]==-32.0)
+		{
+			origin2[1]+=0.03125
+			set_pev(id2, pev_origin, origin2)
+			return true;
 		}
 		
 		return false;
