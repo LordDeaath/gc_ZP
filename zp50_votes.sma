@@ -1551,7 +1551,7 @@ CheckAlien()
 	{
 	}
 	else
-	if(equali(mapname,"zm_lgk_appall"))
+	if(equali(mapname,"zm_lgk_appall_v1"))
 	{
 	}  
 	else
