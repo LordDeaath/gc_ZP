@@ -7,240 +7,345 @@
 #include <zp50_ammopacks>
 #include <ColorChat>
 #include <zp50_gamemodes>
+#include <hamsandwich>
 
 #define PLUGIN "Gift Extra Item"
 #define VERSION "1.0"
 #define AUTHOR "Lord. Death."
 
+#define TASK_SEND 641244
+
 enum _:PlayerData
 {
 	g_iPlayer
 }
-new Items[9], GiftID[33], Donor[33], ItemGiftID[33], jNamID[32]//ItemSniper, ItemClip, ItemBalrog,ItemAkm, ItemM4,
-new g_PlayerInfo[33][PlayerData]
-new iDonated[33], iDontin[33]
-new MyMenu[33]
+
+new Items[9], Chosen[33], Donor[33], ItemGiftID[33]
+new bool: iDonated[33]
+new bool:CanDonate	
+new Tag,Wars,Potato,Cannibals,Nightmare,Alien,Race,SVN
+
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 
 	register_clcmd("say /don", "pMenu")	
 	register_clcmd("say /donate", "pMenu")	
 	register_clcmd("say /gift", "pMenu")
+	
+	RegisterHam(Ham_Killed, "player", "fw_KilledPost",1)
+
+	register_menucmd(register_menuid("AcceptRefuse"), MENU_KEY_1|MENU_KEY_2, "Gift_AccOrRef")
 }
-public zp_fw_gamemodes_end()
+new ItemNames[9][]=
 {
-	for(new i = 1; i <= 32;i++)
-	{
-		iDonated[i] = 0
-		iDontin[i] = 0
-	}
+"SG550 Auto-Sniper",
+"G3SG1 Auto-Sniper",
+"Sawn-Off Shotgun",
+"Golden Deagle",
+"Balrog-7 (2x Damage)",
+"Silver M4A1",
+"AKM 12",
+"Balrog XM1014",
+"Unlimited Clip"
 }
-		
+new ItemCosts[9];
 public plugin_cfg()
 {
-	Items[0] = zp_items_get_id("SG550 Auto-Sniper")
-	Items[1] = zp_items_get_id("G3SG1 Auto-Sniper")	
-	Items[2] = zp_items_get_id("Sawn-Off Shotgun")
-	Items[3] = zp_items_get_id("Golden Deagle")
-	Items[4] = zp_items_get_id("Balrog-7 (2x Damage)")
-	Items[5] = zp_items_get_id("Silver M4A1")
-	Items[6] = zp_items_get_id("AKM 12")
-	Items[7] = zp_items_get_id("Balrog XM1014")
-	Items[8] = zp_items_get_id("Unlimited Clip")
-
+	SVN = zp_gamemodes_get_id("Snipers Vs Nemesis");
+	Tag = zp_gamemodes_get_id("Zombie Tag Mode");
+	Wars = zp_gamemodes_get_id("Infection Wars Mode");
+	Potato = zp_gamemodes_get_id("Hot Potato Mode");
+	Cannibals = zp_gamemodes_get_id("Cannibals Mode")
+	Nightmare = zp_gamemodes_get_id("Nightmare Mode")
+	Alien = zp_gamemodes_get_id("Alien Mode")
+	Race = zp_gamemodes_get_id("Nemesis Race Mode")
+	for(new item;item<sizeof(Items);item++)
+	{
+		Items[item]=zp_items_get_id(ItemNames[item])
+		ItemCosts[item]=zp_items_get_cost(Items[item])
+	}
 }
+
+public zp_fw_gamemodes_start(id)
+{
+	if (id!=ZP_NO_GAME_MODE&&id!=SVN&&id!=Tag&&id!=Wars&&id!=Potato&&id!=Cannibals&&id!= Nightmare&&id!=Alien&&id!=Race)
+		CanDonate = true;
+}
+
+public zp_fw_gamemodes_end()
+{	
+	CanDonate = false
+	for(new id=1;id<33;id++)
+	{		
+		iDonated[id]=false;
+		if(task_exists(id+TASK_SEND)&&task_exists(Chosen[id]))
+		{		
+			ColorChat(id, GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since the Round Ended")
+			ColorChat(Chosen[id], GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since the Round Ended!")
+			remove_task(id+TASK_SEND)
+			remove_task(Chosen[id])
+		}
+	}
+}
+
 public pMenu(id)
 {
+	if(!CanDonate)
+	{
+		return PLUGIN_HANDLED;
+	}
 
 	if(!is_user_connected(id))
-		return;	
+		return PLUGIN_HANDLED;
+
+	if(!is_user_alive(id)||zp_core_is_zombie(id) )
+	{
+		ColorChat(id, GREEN, "[GC]^3 Only ^4humans^3 can gift extra items")		
+		return PLUGIN_HANDLED;
+	}
+
 	if(iDonated[id])
 	{
-		ColorChat(id, GREEN, "[GC]^3 You can donate ^41 extra item^3 each round")
-		return;
+		ColorChat(id, GREEN, "[GC]^3 You can donate^4 1 extra item^3 each round")	
+		return PLUGIN_HANDLED;
 	}
-	if(zp_core_is_zombie(id) || !is_user_alive(id))
+	
+	if(task_exists(id+TASK_SEND))
 	{
-		ColorChat(id, GREEN, "[GC]^3 Only ^4humans^3 can gift extra items")
-		return;
+		ColorChat(id, GREEN, "[GC]^3 Wait till your current request ends")
+		return PLUGIN_HANDLED;
 	}
-	if(iDontin[id])
-	{
-		ColorChat(id, GREEN, "[GC]^3 Wait till ^4%s^3 Times out or Refuses", jNamID)
-		return;
-	}
-	static pName[34]
-	new pCount = get_maxplayers()
+
+	static pName[32], playerID[1]
 	new Menu = menu_create("\r[\yGC\r] \wPick a player to gift an extra item^nYou will pay for the item that he gets.^n", "SelectedPlayer")
-	for (new i=0,n=0; i < pCount; i++)
-	{
-		if(!is_user_connected(i))
-			continue;
-		if(i == id)
-			continue;		
+	
+	for (new i=1; i < 33; i++)
+	{	
 		if(!is_user_alive(i))
 			continue;		
 		if(zp_core_is_zombie(i))
 			continue;
-		g_PlayerInfo[n++][g_iPlayer] = i
-		get_user_name(i,pName, charsmax(pName))
-		menu_additem(Menu, pName, "", 0)
+		if(i == id)
+			continue;	
+		playerID[0] = i
+		get_user_name(i, pName, charsmax(pName))
+		menu_additem(Menu, pName, playerID)
 	}
+
 	menu_setprop( Menu, MPROP_EXIT, MEXIT_ALL );
-	menu_display( id, Menu, 0 );
+	menu_display( id, Menu, 0 );		
+	return PLUGIN_HANDLED;
 }
 
 public SelectedPlayer(id, menu, item)
 {
-	new choosen = g_PlayerInfo[item][g_iPlayer]
-	if(!is_user_connected(choosen) || !is_user_connected(id))
-		return;	
-	if(zp_core_is_zombie(id) || !is_user_alive(id))
+	if(!CanDonate)
+		return PLUGIN_HANDLED;
+
+	if(item==MENU_EXIT)
+	{		
+		menu_destroy(menu)
+		return PLUGIN_HANDLED;
+	}
+
+	new chosen[1], chosenname[32]
+	menu_item_getinfo(menu, item, _, chosen, sizeof(chosen), chosenname, charsmax(chosenname))
+
+	if(!is_user_alive(id)||zp_core_is_zombie(id)||!is_user_alive(chosen[0])||zp_core_is_zombie(chosen[0]))
 	{
 		ColorChat(id, GREEN, "[GC]^3 Only ^4humans^3 can gift extra items")
-		return;
+		menu_destroy(menu)
+		return PLUGIN_HANDLED;
 	}
-	
-	if(!is_user_alive(choosen))
-		return;		
-	if(zp_core_is_zombie(choosen))
-		return;
-	static pName[34]
-	get_user_name(choosen,pName, charsmax(pName))
-	Gift(id, choosen)
-	menu_destroy(menu)
-}
 
-public Gift(donor, id)
-{
-	if(!is_user_connected(id))
-		return;		
-	if(!is_user_alive(id))
-		return;		
-	if(zp_core_is_zombie(id) || zp_core_is_zombie(donor))
-		return;
-	static ItemName[64], Txt[64]
-	GiftID[donor] = id
-	static Txt2[128], iName[32]
-	get_user_name(id, iName, charsmax(iName))
-	format(Txt2,charsmax(Txt2),"\r[\yGC\r] \wPick an item to gift \y%s", iName)
-	new Menu = menu_create(Txt2, "SelectedGift")
-	for (new i = 0; i <= 8; i++)
+	static Txt[128]
+
+	Chosen[id] = chosen[0]
+
+	formatex(Txt,charsmax(Txt),"\r[\yGC\r] \wPick an item to gift \y%s", chosenname)
+	new Menu = menu_create(Txt, "SelectedGift")
+	for (new i = 0; i < sizeof(Items); i++)
 	{
-		zp_items_get_name(Items[i], ItemName, charsmax(ItemName))
-		if(zp_ammopacks_get(donor) >= zp_items_get_cost(Items[i]))
-			format(Txt, charsmax(Txt), "%s \y%d", ItemName, zp_items_get_cost(Items[i]))
+		if(zp_ammopacks_get(id) >= ItemCosts[i])
+			formatex(Txt, charsmax(Txt), "%s \y%d", ItemNames[i], ItemCosts[i])
 		else	
-			format(Txt, charsmax(Txt), "\d%s %d", ItemName, zp_items_get_cost(Items[i]))
+			formatex(Txt, charsmax(Txt), "\d%s %d", ItemNames[i], ItemCosts[i])
 		menu_additem(Menu, Txt, "", 0)
 	}
 	menu_setprop( Menu, MPROP_EXIT, MEXIT_ALL );
-	menu_display( donor, Menu, 0 );
+	menu_display( id, Menu, 0 );
+
+	menu_destroy(menu)
+	return PLUGIN_HANDLED;
 }
 
 public SelectedGift(donor, menu, item)
 {
-	new id = GiftID[donor]
-	if(!is_user_connected(id))
-		return;		
-	if(zp_core_is_zombie(donor) || !is_user_alive(donor))
-	{
-		ColorChat(id, GREEN, "[GC]^3 Only ^4humans^3 can gift extra items")
-		return;
+	if(!CanDonate)
+		return PLUGIN_HANDLED;
+
+	if(item==MENU_EXIT)
+	{		
+		menu_destroy(menu)
+		return PLUGIN_HANDLED;
 	}
-	if(!is_user_alive(id))
-		return;		
-	if(zp_core_is_zombie(id) || zp_core_is_zombie(donor))
-		return;	
-	if(zp_ammopacks_get(donor) < zp_items_get_cost(Items[item]))
+
+	if(!is_user_alive(donor)||zp_core_is_zombie(donor) )
+	{
+		ColorChat(Chosen[donor], GREEN, "[GC]^3 Only ^4humans^3 can gift extra items")
+		menu_destroy(menu)
+		return PLUGIN_HANDLED;
+	}
+
+	if(!is_user_alive(Chosen[donor])||zp_core_is_zombie(Chosen[donor]))
+	{		
+		menu_destroy(menu)
+		return PLUGIN_HANDLED;
+	}
+
+	if(zp_ammopacks_get(donor) < ItemCosts[item])
 	{
 		ColorChat(donor, GREEN, "[GC]^3 you can't gift an extra items that you can't afford.")
-		return;
+		menu_destroy(menu)
+		return PLUGIN_HANDLED;
 	}
-	Donor[id] = donor
-	ItemGiftID[id] = Items[item]
-	SelectedProm(id)
-	menu_destroy(menu)
-}
-public SelectedProm(id)
-{
-	new donor = Donor[id]
-	if(!is_user_connected(donor))
-		return;	
-	if(zp_core_is_zombie(donor) || !is_user_alive(donor))
-		return;
-	if(zp_core_is_zombie(id) || !is_user_alive(id))
-		return;	
+	static iNamID[32]
+	get_user_name(Chosen[donor], iNamID, charsmax(iNamID))
 
-	static Txt[128], iName[32], iNamID[32], ItmNam[64]
+	static Txt[128], iName[32]
+
 	get_user_name(donor, iName, charsmax(iName))
-	get_user_name(id, iNamID, charsmax(iNamID))
-	get_user_name(id, jNamID, charsmax(jNamID))
-	zp_items_get_name(ItemGiftID[id], ItmNam, charsmax(ItmNam))
-	if(iDontin[donor])
-	{
-		ColorChat(donor, GREEN, "[GC]^3 Wait till ^4%s^3 Times out or Refuses", iNamID)
-		return;
-	}
-	iDontin[donor] = 1
-	ColorChat(donor, GREEN, "[GC]^3 You are sending a ^4%s^3 to ^4%s", ItmNam, iNamID)
-	ColorChat(id, GREEN, "[GC]^3 You are receving a ^4%s^3 from ^4%s", ItmNam,iName)
-	format(Txt,charsmax(Txt), "\r[\yGC\r]\w You are receving a \y%s\w from \y%s\w^n", ItmNam,iName)
-	MyMenu[id] = menu_create(Txt, "Gift_AccOrRef")
-	menu_additem(MyMenu[id], "Accept", "", 0)
-	menu_additem(MyMenu[id], "Refuse", "", 0)
-	menu_setprop( id, MPROP_EXIT, MEXIT_ALL );
-	menu_display( id, MyMenu[id], 0 );
-	set_task(10.0,"TimOut", id) 
-	
-}
-public TimOut(id)
-{	
-	if(iDontin[Donor[id]])
-	{
-		iDontin[Donor[id]] = 0
-		id = GiftID[Donor[id]]
-		menu_destroy(MyMenu[id])
-		ColorChat(id, GREEN, "[GC]^3 Gift Request timed out.")
-		ColorChat(Donor[id],GREEN, "[GC]^3 Gift Request timed out. You can try gifting again.")
-	}
+	ColorChat(donor, GREEN, "[GC]^3 You are sending a ^4%s^3 to ^4%s", ItemNames[item], iNamID)
+	ColorChat(Chosen[donor], GREEN, "[GC]^3 You are receving a ^4%s^3 from ^4%s", ItemNames[item], iName)
+	formatex(Txt,charsmax(Txt), "\r[\yGC\r]\w You are receving a \y%s\w from \y%s\w^n^n\r1.\w Accept^n^n\r2.\w Refuse", ItemNames[item],iName)
 
+	show_menu(Chosen[donor], MENU_KEY_1 | MENU_KEY_2, Txt, 10, "AcceptRefuse")
+
+	set_task(10.0,"SenderTimeOut", donor+TASK_SEND) 
+	set_task(10.0,"ReceiverTimeOut", Chosen[donor]) 
+
+	Donor[Chosen[donor]] = donor
+	ItemGiftID[Chosen[donor]] = item
+	menu_destroy(menu)
+	return PLUGIN_HANDLED;
 }
-public Gift_AccOrRef(id, menu, item)
+
+public SenderTimeOut(donor)
+{	
+	if(!CanDonate)
+		return;
+		
+	donor-=TASK_SEND
+		
+	if(is_user_alive(donor)&&!zp_core_is_zombie(donor))
+		ColorChat(donor,GREEN, "[GC]^3 Gift Request timed out. You can try gifting again.")
+}
+
+public ReceiverTimeOut(chosen)
 {
-	//Donor[id] -= MenuTask
-	static iName[32], iNamID[32]
-	get_user_name(Donor[id], iName, charsmax(iName))
-	get_user_name(id, iNamID, charsmax(iNamID))
-	switch(item)
+	if(!CanDonate)
+		return;
+
+	if(is_user_alive(chosen)&&!zp_core_is_zombie(chosen))
+		ColorChat(chosen, GREEN, "[GC]^3 Gift Request timed out.")
+}
+
+public Gift_AccOrRef(chosen, key)
+{
+	if(!CanDonate)
+		return PLUGIN_HANDLED;
+		
+	switch(key)
 	{
 		case 0: 
 		{
-			if(!is_user_connected(Donor[id]))
-				ColorChat(id, GREEN, "[GC]^3 %s ^1disconnected.", iName)
+			if(!task_exists(Donor[chosen]+TASK_SEND))
+			{
+				ColorChat(chosen, GREEN, "[GC]^3 Your^4 Donor^3 is no longer^4 Human^3!")
+			}
+			else if(!task_exists(chosen))
+			{				
+				ColorChat(chosen, GREEN, "[GC]^3 You can only accept^4 Gifts^3 as a^4 Human^3!")
+			}
 			else				
-			if(zp_ammopacks_get(Donor[id]) >= zp_items_get_cost(ItemGiftID[id]))
-			{
-				iDonated[Donor[id]] = 1
-				ColorChat(Donor[id], GREEN, "[GC]^1%s ^3accepted your gift.", iNamID)
-				zp_items_force_buy(id, ItemGiftID[id],true)
-				zp_ammopacks_set(Donor[id], zp_ammopacks_get(Donor[id]) - zp_items_get_cost(ItemGiftID[id]))
-			//	iDontin[Donor[id]] = 0
-				
-				//else
-				//	ColorChat(Donor[id], GREEN, "[GC] ^3Item not avaliable for ^1%s ^3 [Item limit reached]", iNamID)
+			{				
+				static iName[32], iNamID[32]
+				get_user_name(Donor[chosen], iName, charsmax(iName))
+				get_user_name(chosen, iNamID, charsmax(iNamID))
+				if(zp_ammopacks_get(Donor[chosen]) >= ItemCosts[ItemGiftID[Donor[chosen]]])
+				{
+					iDonated[Donor[chosen]] = true
+					ColorChat(Donor[chosen], GREEN, "[GC] ^1%s ^4Accepted^3 your^4 Gift^3.", iNamID)
+					zp_items_force_buy(chosen, Items[ItemGiftID[Donor[chosen]]],true)
+					zp_ammopacks_set(Donor[chosen], zp_ammopacks_get(Donor[chosen]) - ItemCosts[ItemGiftID[Donor[chosen]]])
+				}
+				else
+				{
+					ColorChat(Donor[chosen], GREEN, "[GC]^1 %s^4 Accepted^3 your^4 Gift^3 but he doesn't have enough AP to pay.", iNamID)
+				}
 			}
-			else
-			{
-				ColorChat(Donor[id], GREEN, "[GC]^1%s ^3accepted your gift but you don't have enough AP to pay.", iNamID)
-				iDontin[Donor[id]] = 0
-			}
+			
 		}
 		case 1:
 		{
-			iDontin[Donor[id]] = 0
-			ColorChat(Donor[id], GREEN, "[GC]^1%s ^3Refused your ^4gift.^3 you can try donating to somone else.", iNamID)
+			if(!task_exists(Donor[chosen]+TASK_SEND)||!task_exists(chosen))
+			{
+				static iName[32], iNamID[32]
+				get_user_name(Donor[chosen], iName, charsmax(iName))
+				get_user_name(chosen, iNamID, charsmax(iNamID))
+				ColorChat(Donor[chosen], GREEN, "[GC]^1 %s^3 Refused your ^4Gift^3. You can try donating to somone else.", iNamID)
+			}
 		}
 	}
-	menu_destroy(menu)
+	remove_task(Donor[chosen]+TASK_SEND)
+	remove_task(chosen)
+	return PLUGIN_HANDLED;
 }
+
+public client_disconnected(id)
+{
+	if(task_exists(id)&&task_exists(Donor[id]+TASK_SEND))
+	{
+		ColorChat(id, GREEN, "[GC]^3 Your^4 Receiver^3 Disconnected!")
+	}
+	if(task_exists(id+TASK_SEND)&&task_exists(Donor[id]))
+	{		
+		ColorChat(id, GREEN, "[GC]^3 Your^4 Donor^3 Disconnected!")
+	}
+	remove_task(id)
+	remove_task(id+TASK_SEND)
+}
+
+public zp_fw_core_infect_post(id)
+{
+	if(task_exists(id)&&task_exists(Donor[id]+TASK_SEND))
+	{
+		ColorChat(id, GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since you got Infected!")
+		ColorChat(Donor[id], GREEN, "[GC]^3 Your^4 Donation^3 was^4 Cancelled^3 since your^4 Receiver^3 got Infected!")
+	}
+	if(task_exists(id+TASK_SEND)&&task_exists(Chosen[id]))
+	{		
+		ColorChat(id, GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since you got Infected!")
+		ColorChat(Chosen[id], GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since your^4 Donor^3 got Infected!")
+	}
+
+	remove_task(id)
+	remove_task(id+TASK_SEND)
+}
+
+public fw_KilledPost(id)
+{
+	if(task_exists(id)&&task_exists(Donor[id]+TASK_SEND))
+	{
+		ColorChat(id, GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since you died!")
+		ColorChat(Donor[id], GREEN, "[GC]^3 Your^4 Donation^3 was^4 Cancelled^3 since your^4 Receiver^3 died!")
+	}
+	if(task_exists(id+TASK_SEND)&&task_exists(Chosen[id]))
+	{		
+		ColorChat(id, GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since you died!")
+		ColorChat(Chosen[id], GREEN, "[GC]^3 The^4 Donation^3 was^4 Cancelled^3 since your^4 Donor^3 died!")
+	}
+	remove_task(id)
+	remove_task(id+TASK_SEND)
+}
+    
