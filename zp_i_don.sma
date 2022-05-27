@@ -225,7 +225,7 @@ public SelectedGift(donor, menu, item)
 	set_task(10.0,"ReceiverTimeOut", Chosen[donor]) 
 
 	Donor[Chosen[donor]] = donor
-	ItemGiftID[Chosen[donor]] = item
+	ItemGiftID[donor] = item
 	menu_destroy(menu)
 	return PLUGIN_HANDLED;
 }
