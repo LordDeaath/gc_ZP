@@ -104,7 +104,7 @@ public Load_MySql(id)
     new Data[1]
     Data[0] = id
     new Text[124]
-    format(Text, charsmax(Text), "[ %d ] quests Loaded for [ %s ] [ %s ] " , r_points(id) ,iPlayerNick, szSteamId)
+    format(Text, charsmax(Text), "[ %d ] Challenges Loaded for [ %s ] [ %s ] " , r_points(id) ,iPlayerNick, szSteamId)
     format(szTemp,charsmax(szTemp),"SELECT * FROM `quest_db` WHERE (`steamid` = '%s')", szSteamId)
     SQL_ThreadQuery(g_SqlTuple,"register_client",szTemp,Data,1)
     ZP_PointsLog(Text)
