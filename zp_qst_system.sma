@@ -8,8 +8,8 @@
 #include <zombieplague>
 #include <colorchat>
 
-#define PLUGIN "Points Bank + Logger"
-#define VERSION "1.2"
+#define PLUGIN "Q + Logger"
+#define VERSION "2.0"
 #define AUTHOR "Lord. Death."
 
 //  Mysql Information
@@ -21,16 +21,24 @@ new Db[]     = "zp_stats"
 new Handle:g_SqlTuple
 new g_Error[512]
 new Saved_Points[33], Quest1[33],Quest2[33],Quest3[33],Quest4[33],Quest5[33],Quest6[33]
-new ZomDam[33], HumDam[33], Score[33], Deaths[33], DamageState[33],ScoreState[33], DeathsState[33], MassKillS[33], MassInfS[33]
-new Mod[2], IsHuman[33]
+new ZomDam[33], HumDam[33], Score[33], Deaths[33], MassInfS[33]
+new Mod[2], IsHuman[33], Round
+new bool:Loaded[33]
+//new QuestDone[33][12]
+new Trie:qDone[20] // g means global; t means trie
+
+
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
-	register_clcmd("say /challenges", "Counter")
-	register_clcmd("say /c", "Counter")
+	register_clcmd("say /challenges", "challenges_menu")
+	register_clcmd("say /c", "challenges_menu")
 	//register_clcmd("say /load", "Load_MySql")
 	//register_clcmd("say /loaded", "load_points")
-	
+	for(new q = 5;q < 20; q++)
+		qDone[q] = TrieCreate()
+	//TrieSetCell(
 	set_task(2.0,"MySql_Init") // set a task to activate the mysql_init
+	
 }
 public plugin_natives()
 {
@@ -64,6 +72,75 @@ public s_quest(id, quest, num)
 		default: return;
 	}
 }
+public challenges_menu(id)
+{
+	new Title[128], ScoreTxt[5][128]
+	new DeathsTxt[5][128]
+	new DamTxt[6][128]
+	new SteamID[34]
+	get_user_authid(id, SteamID,charsmax(SteamID))
+	formatex(ScoreTxt[0], charsmax(ScoreTxt[]), "[%d/200] Score", Score[id])	
+	formatex(ScoreTxt[1], charsmax(ScoreTxt[]), "[%d/250] Score", Score[id])
+	formatex(ScoreTxt[2], charsmax(ScoreTxt[]), "[%d/300] Score", Score[id])
+	formatex(ScoreTxt[3], charsmax(ScoreTxt[]), "[%d/350] Score", Score[id])	
+	formatex(ScoreTxt[4], charsmax(ScoreTxt[]), "[%d/400] Score", Score[id])
+	
+	formatex(DeathsTxt[0], charsmax(DeathsTxt[]), "[%d/15] Deaths", Deaths[id])
+	formatex(DeathsTxt[1], charsmax(DeathsTxt[]), "[%d/25] Deaths", Deaths[id])
+	formatex(DeathsTxt[2], charsmax(DeathsTxt[]), " [%d/40] Deaths", Deaths[id])
+	
+	formatex(DamTxt[0], charsmax(DamTxt[]), "Deal [%d/50000] Damage", HumDam[id])
+	formatex(DamTxt[1], charsmax(DamTxt[]), "Deal [%d/75000] Damage", HumDam[id])
+	formatex(DamTxt[2], charsmax(DamTxt[]), "Deal [%d/100000] Damage", HumDam[id])
+	
+	formatex(DamTxt[3], charsmax(DamTxt[]), "Take [%d/25000] Damage", ZomDam[id])
+	formatex(DamTxt[4], charsmax(DamTxt[]), "Take [%d/40000] Damage", ZomDam[id])
+	formatex(DamTxt[5], charsmax(DamTxt[]), "Take [%d/50000] Damage", ZomDam[id])	
+	
+	if(Loaded[id])
+		formatex(Title,charsmax(Title),"Your compeleted challenges:\y %d\w^nChallenge list:",r_points(id))
+	else
+		formatex(Title,charsmax(Title),"Your compeleted challenges:\w^nChallenge list:")
+	new MyM = menu_create(Title,"MQuest",0)
+	if(Score[id] < 200)
+		menu_additem(MyM, ScoreTxt[0])
+	if(Score[id] < 250)	
+		menu_additem(MyM, ScoreTxt[1])
+	if(Score[id] < 300)
+		menu_additem(MyM, ScoreTxt[2])
+	if(Score[id] < 350)
+		menu_additem(MyM, ScoreTxt[3])
+	if(Score[id] < 400)
+		menu_additem(MyM, ScoreTxt[4])
+	if(Deaths[id] < 15)
+		menu_additem(MyM, DeathsTxt[0])
+	if(Deaths[id] < 25)	
+		menu_additem(MyM, DeathsTxt[1])
+	if(Deaths[id] < 40)
+		menu_additem(MyM, DeathsTxt[2])
+	if(HumDam[id] < 50000)	
+		menu_additem(MyM, DamTxt[0])
+	if(HumDam[id] < 75000)	
+		menu_additem(MyM, DamTxt[1])
+	if(HumDam[id] < 100000)
+		menu_additem(MyM, DamTxt[2])
+	if(ZomDam[id] < 25000)
+		menu_additem(MyM, DamTxt[3])
+	if(ZomDam[id] < 40000)
+		menu_additem(MyM, DamTxt[4])
+	if(ZomDam[id] < 50000)
+		menu_additem(MyM, DamTxt[5])
+	menu_additem(MyM, "Kill 3,4,5 zombies with 1 RC")
+	menu_additem(MyM, "Infect 6,7,8 humans with 1 bomb")
+	
+	menu_display(id,MyM)
+	//menu_additem(MyM, "Survive a infection round without getting rekt")
+}
+public MQuest(id, menu, item)
+{
+	menu_destroy(menu);
+	return PLUGIN_HANDLED;
+}
 public MySql_Init() 
 {
     g_SqlTuple = SQL_MakeDbTuple(Host,User,Pass,Db)
@@ -91,6 +168,8 @@ public MySql_Init()
 public plugin_end()
 {
     SQL_FreeHandle(g_SqlTuple)
+    for(new q = 5;q < 20; q++)
+	TrieDestroy(qDone[q])
 } 
 
 public Load_MySql(id)
@@ -103,11 +182,8 @@ public Load_MySql(id)
 
     new Data[1]
     Data[0] = id
-    new Text[124]
-    format(Text, charsmax(Text), "[ %d ] Challenges Loaded for [ %s ] [ %s ] " , r_points(id) ,iPlayerNick, szSteamId)
     format(szTemp,charsmax(szTemp),"SELECT * FROM `quest_db` WHERE (`steamid` = '%s')", szSteamId)
     SQL_ThreadQuery(g_SqlTuple,"register_client",szTemp,Data,1)
-    ZP_PointsLog(Text)
    // client_print(0,print_chat,Text)
 }
 
@@ -124,14 +200,14 @@ public register_client(FailState,Handle:Query,Error[],Errcode,Data[],DataSize)
 
     new id
     id = Data[0]
-    
+    new szSteamId[32], iPlayerNick[32]
+    get_user_authid(id, szSteamId, charsmax(szSteamId)) // get user's steamid
+    get_user_name(id, iPlayerNick, charsmax(iPlayerNick))    
     if(SQL_NumResults(Query) < 1) 
     {
         //.if there are no results found
         
-        new szSteamId[32], iPlayerNick[32]
-        get_user_authid(id, szSteamId, charsmax(szSteamId)) // get user's steamid
-        get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
+
         if (equal(szSteamId,"ID_PENDING"))
             return PLUGIN_HANDLED
             
@@ -143,15 +219,21 @@ public register_client(FailState,Handle:Query,Error[],Errcode,Data[],DataSize)
     } 
     else 
     {
-    
-        // if there are results found
-	Saved_Points[id] = SQL_ReadResult(Query, 2)
-	Quest1[id] = SQL_ReadResult(Query, 3)
-	Quest2[id] = SQL_ReadResult(Query, 4)
-	Quest3[id] = SQL_ReadResult(Query, 5)
-	Quest4[id] = SQL_ReadResult(Query, 6)
-	Quest5[id] = SQL_ReadResult(Query, 7)
-	Quest6[id] = SQL_ReadResult(Query, 8)
+	if(is_user_connected(id))
+	{
+		new Text[124]
+		// if there are results found
+		Saved_Points[id] = SQL_ReadResult(Query, 2)
+		Quest1[id] = SQL_ReadResult(Query, 3)
+		Quest2[id] = SQL_ReadResult(Query, 4)
+		Quest3[id] = SQL_ReadResult(Query, 5)
+		Quest4[id] = SQL_ReadResult(Query, 6)
+		Quest5[id] = SQL_ReadResult(Query, 7)
+		Quest6[id] = SQL_ReadResult(Query, 8)
+		Loaded[id]=true;
+		format(Text, charsmax(Text), "[ %d ] quests Loaded for [ %s ] [ %s ] " , r_points(id) ,iPlayerNick, szSteamId)
+		ZP_PointsLog(Text)
+	}
         //r_points(id, Saved_Points[id])
     }
     
@@ -160,74 +242,92 @@ public register_client(FailState,Handle:Query,Error[],Errcode,Data[],DataSize)
 
 public Save_MySql(id)
 {
-    if(is_user_bot(id))
-	return;
-    new szSteamId[32],iPlayerNick[32], szTemp[512]
-    get_user_authid(id, szSteamId, charsmax(szSteamId))
-    get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
-    new point = r_points(id)
-    new Text[124]
-    format(Text, charsmax(Text), "[ %d ] Challenges Saved for [ %s ] [ %s ] - C1: [%d] ,C2: [%d] ,C3: [%d] ,C4: [%d] ,C5: [%d] ,C6: [%d] " , point,iPlayerNick, szSteamId, Quest1[id],Quest2[id],Quest3[id],Quest4[id],Quest5[id],Quest6[id])
-    format(szTemp,charsmax(szTemp),"UPDATE `quest_db` SET `count` = '%i' , `quest_1` = '%i' , `quest_2` = '%i' , `quest_3` = '%i' , `quest_4` = '%i'\
-    , `quest_5` = '%i' , `quest_6` = '%i' , `nick` = '%s' WHERE `steamid` = '%s'", point, Quest1[id],Quest2[id],Quest3[id],Quest4[id],Quest5[id],Quest6[id],iPlayerNick, szSteamId)
-    SQL_ThreadQuery(g_SqlTuple,"IgnoreHandle",szTemp)
-    ZP_PointsLog(Text)
+	if(is_user_bot(id))
+		return;
+	if(is_user_connected(id)&&Loaded[id])
+	{
+		new szSteamId[32],iPlayerNick[32], szTemp[512]
+		get_user_authid(id, szSteamId, charsmax(szSteamId))
+		get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
+		new point = r_points(id)
+		new Text[124]
+		format(Text, charsmax(Text), "[ %d ] Challenges Saved for [ %s ] [ %s ] - C1: [%d] ,C2: [%d] ,C3: [%d] ,C4: [%d] ,C5: [%d] ,C6: [%d] " , point,iPlayerNick, szSteamId, Quest1[id],Quest2[id],Quest3[id],Quest4[id],Quest5[id],Quest6[id])
+		format(szTemp,charsmax(szTemp),"UPDATE `quest_db` SET `count` = '%i' , `quest_1` = '%i' , `quest_2` = '%i' , `quest_3` = '%i' , `quest_4` = '%i'\
+		, `quest_5` = '%i' , `quest_6` = '%i' , `nick` = '%s' WHERE `steamid` = '%s'", point, Quest1[id],Quest2[id],Quest3[id],Quest4[id],Quest5[id],Quest6[id],iPlayerNick, szSteamId)
+		SQL_ThreadQuery(g_SqlTuple,"IgnoreHandle",szTemp)
+		ZP_PointsLog(Text)
+	}
     //client_print(0,print_chat,Text)
 } 
 
 public Client_MassKill(id, kills)
 {
+	
 	new current_mode = zp_gamemodes_get_current()
 	if(current_mode != Mod[0] && current_mode != Mod[1])
 		return;
-	if(kills >= 5 && MassKillS[id] == 2)
+	new qDoneL[4]
+	for(new qL;qL < 3;qL++)
+		qDoneL[qL] = 0
+	if(kills >= 3)
 	{
-		Saved_Points[id]++
-		MassKillS[id] = 0
-		Save_MySql(id)
-		Counter_add(id)
-	}
-	else if(kills >= 4 && MassKillS[id] == 1)
-	{
-		Saved_Points[id]++
-		MassKillS[id] = 2
-		Save_MySql(id)
-		Counter_add(id)
-	}
-	else if(kills >= 3 && MassKillS[id] == 0)
-	{
-		Saved_Points[id]++
-		MassKillS[id] = 1
-		Save_MySql(id)
-		Counter_add(id)
+		if(kills >= 3 && !qDoneL[0])
+		{
+			
+			Saved_Points[id]++
+			Save_MySql(id)
+			Counter_add(id)
+			qDoneL[0] = 1
+		}
+		if(kills >= 4 && !qDoneL[1])
+		{
+			Saved_Points[id]++
+			Save_MySql(id)
+			Counter_add(id)
+			qDoneL[1] = 1
+		}
+		if(kills >= 5 && !qDoneL[2])
+		{
+			Saved_Points[id]++
+			Save_MySql(id)
+			Counter_add(id)
+			qDoneL[2] = 1
+		}
 	}
 }
 
 public Client_MassInf(id, kills)
 {
-	if(kills >= 6 && MassInfS[id] == 0 && Quest1[id] < 3)
+	new qDoneL[4]
+	for(new qL;qL < 3;qL++)
+		qDoneL[qL] = 0
+	if(kills >= 6)
 	{
-		Saved_Points[id]++
-		MassInfS[id] = 1
-		Quest1[id]++
-		Save_MySql(id)
-		Counter_add(id)
-	}
-	else if(kills >= 7 && MassInfS[id] == 1 && Quest2[id] < 3)
-	{
-		Saved_Points[id]++
-		MassInfS[id] = 2
-		Quest2[id]++
-		Save_MySql(id)
-		Counter_add(id)
-	}
-	else if(kills >= 8 && MassInfS[id] == 2 && Quest3[id] < 3)
-	{
-		Saved_Points[id]++
-		MassInfS[id] = 0
-		Quest3[id]++
-		Save_MySql(id)
-		Counter_add(id)
+		if(kills >= 6 && Quest1[id] < 3 && !qDoneL[0])
+		{
+			Saved_Points[id]++
+			Quest1[id]++
+			Save_MySql(id)
+			Counter_add(id)
+			qDoneL[0] = 1
+		}
+		if(kills >= 7 && Quest2[id] < 3 && !qDoneL[1])
+		{
+			Saved_Points[id]++
+			Quest2[id]++
+			Save_MySql(id)
+			Counter_add(id)
+			qDoneL[1] = 1
+		}
+		if(kills >= 8 && Quest3[id] < 3 && !qDoneL[2])
+		{
+			Saved_Points[id]++
+			MassInfS[id] = 0
+			Quest3[id]++
+			Save_MySql(id)
+			Counter_add(id)
+			qDoneL[2] = 1
+		}
 	}
 }
 
@@ -241,70 +341,78 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 		return;
 	if(!is_user_connected(att) || !is_user_connected(vic))
 		return
-		
+
+	new ASteamID[34], VSteamID[34]
+	get_user_authid(att, ASteamID,charsmax(ASteamID))
+	get_user_authid(vic, VSteamID,charsmax(VSteamID))
+	
 	Score[att] += 3
 	Deaths[vic]++
-	
-	if(Score[att] >= 200 && !ScoreState[att])
+	IsHuman[vic] = 0
+	if(Score[att] >= 200)
 	{
-		Saved_Points[att]++
-		ScoreState[att] = 1
-		Save_MySql(att)
-		Counter_add(att)
+		if(Score[att] >= 200 && !TrieKeyExists(qDone[6], ASteamID))
+		{
+			Saved_Points[att]++
+			Save_MySql(att)
+			Counter_add(att)
+			TrieSetCell(qDone[6],ASteamID, 1)
+		}
+		else if(Score[att] >= 250 && !TrieKeyExists(qDone[7], ASteamID))
+		{
+			Saved_Points[att]++
+			Save_MySql(att)	
+			Counter_add(att)
+			TrieSetCell(qDone[7],ASteamID, 1)
+		}
+		else if(Score[att] >= 300 && !TrieKeyExists(qDone[8], ASteamID))
+		{
+			Saved_Points[att]++
+			Save_MySql(att)	
+			Counter_add(att)
+			TrieSetCell(qDone[8],ASteamID, 1)
+		}
+		else if(Score[att] >= 350 && !TrieKeyExists(qDone[9], ASteamID))
+		{
+			Saved_Points[att]++
+			Save_MySql(att)	
+			Counter_add(att)
+			TrieSetCell(qDone[9],ASteamID, 1)
+		}
+		else if(Score[att] >= 400 && !TrieKeyExists(qDone[10], ASteamID))
+		{
+			Saved_Points[att]++
+			Score[att] = 0
+			Save_MySql(att)	
+			Counter_add(att)
+			TrieSetCell(qDone[10],ASteamID, 1)
+		}
 	}
-	else if(Score[att] >= 250 && ScoreState[att] == 1)
+	if(Deaths[att] >= 15)
 	{
-		Saved_Points[att]++
-		ScoreState[att] = 2
-		Save_MySql(att)	
-		Counter_add(att)
+		if(Deaths[vic] >= 15 && !TrieKeyExists(qDone[11], VSteamID))
+		{
+			Saved_Points[vic]++
+			Save_MySql(vic)
+			Counter_add(vic)
+			TrieSetCell(qDone[11],VSteamID, 1)
+		}
+		else if(Deaths[vic] >= 25 && !TrieKeyExists(qDone[12], VSteamID))
+		{
+			Saved_Points[vic]++
+			Save_MySql(vic)	
+			Counter_add(vic)
+			TrieSetCell(qDone[12],VSteamID, 1)
+		}
+		else if(Deaths[vic] >= 40 && !TrieKeyExists(qDone[13], VSteamID))
+		{
+			Saved_Points[vic]++
+			Deaths[vic] = 0
+			Save_MySql(vic)	
+			Counter_add(vic)
+			TrieSetCell(qDone[13],VSteamID, 1)
+		}
 	}
-	else if(Score[att] >= 300 && ScoreState[att] == 2)
-	{
-		Saved_Points[att]++
-		ScoreState[att] = 3
-		Save_MySql(att)	
-		Counter_add(att)
-	}
-	else if(Score[att] >= 350 && ScoreState[att] == 3)
-	{
-		Saved_Points[att]++
-		ScoreState[att] = 4
-		Save_MySql(att)	
-		Counter_add(att)
-	}
-	else if(Score[att] >= 400 && ScoreState[att] == 4)
-	{
-		Saved_Points[att]++
-		ScoreState[att] = 0
-		Score[att] = 0
-		Save_MySql(att)	
-		Counter_add(att)
-	}
-	
-	if(Deaths[vic] >= 30 && !DeathsState[vic])
-	{
-		Saved_Points[vic]++
-		DeathsState[vic] = 1
-		Save_MySql(vic)
-		Counter_add(vic)
-	}
-	else if(Deaths[vic] >= 40 && DeathsState[vic] == 1)
-	{
-		Saved_Points[vic]++
-		DeathsState[vic] = 2
-		Save_MySql(vic)	
-		Counter_add(vic)
-	}
-	else if(Deaths[vic] >= 50 && DeathsState[vic] == 2)
-	{
-		Saved_Points[vic]++
-		Deaths[vic] = 0
-		DeathsState[vic] = 0
-		Save_MySql(vic)	
-		Counter_add(vic)
-	}
-
 }
 public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 {
@@ -316,63 +424,69 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 		return;
 	if(!is_user_connected(att) || !is_user_connected(vic))
 		return
-	if(zp_core_is_zombie(vic) && !zp_core_is_zombie(att) )
+	if(!is_user_alive(vic))
+		return
+	if(zp_core_is_zombie(vic) && !zp_core_is_zombie(att))
 	{
 		ZomDam[vic] += damage
 		HumDam[att] += damage
 	}
-	
+	new ASteamID[34], VSteamID[34]
 	if(HumDam[att] >= 50000)
 	{
-		if(HumDam[att] >= 50000 && !DamageState[att])
+		get_user_authid(att, ASteamID,charsmax(ASteamID))
+		if(HumDam[att] >= 50000 && !TrieKeyExists(qDone[14], ASteamID))
 		{
-			DamageState[att] = 1
 			Saved_Points[att]++
 			Save_MySql(att)
 			Counter_add(att)
+			TrieSetCell(qDone[14],ASteamID, 1)
 		}
-		if(HumDam[att] >= 75000 && DamageState[att] == 1)
+		if(HumDam[att] >= 75000 && !TrieKeyExists(qDone[15], ASteamID))
 		{
-			DamageState[att] = 2
 			Saved_Points[att]++
 			Save_MySql(att)
 			Counter_add(att)
+			TrieSetCell(qDone[15],ASteamID, 1)
+
 		}
-		if(HumDam[att] >= 100000 && DamageState[att] == 2)
+		if(HumDam[att] >= 100000 && !TrieKeyExists(qDone[16], ASteamID))
 		{
-			DamageState[att] = 0
-			HumDam[att] = 0
 			Saved_Points[att]++
 			Save_MySql(att)
 			Counter_add(att)
+			TrieSetCell(qDone[16],ASteamID, 1)
+
 		}
 	}
-	if(ZomDam[vic] >= 20000)
+	if(ZomDam[vic] >= 25000)
 	{
 		
-		if(Quest4[vic] < 3 &&  ZomDam[vic] >= 20000)
+		get_user_authid(vic, VSteamID,charsmax(VSteamID))
+		if(Quest4[vic] < 3 &&  ZomDam[vic] >= 25000 && !TrieKeyExists(qDone[17], VSteamID))
 		{
 			Saved_Points[vic]++
 			Quest4[vic]++
-			ZomDam[vic] = 0
 			Save_MySql(vic)
 			Counter_add(vic)
+			TrieSetCell(qDone[17],VSteamID, 1)
 		}
-		if(Quest5[vic] < 3 &&  ZomDam[vic] >= 30000)
+		if(Quest5[vic] < 3 &&  ZomDam[vic] >= 40000 && !TrieKeyExists(qDone[18], VSteamID))
 		{
 			Saved_Points[vic]++
 			Quest5[vic]++
-			ZomDam[vic] = 0
 			Save_MySql(vic)
 			Counter_add(vic)
+			TrieSetCell(qDone[18],VSteamID, 1)
 		}
-		if(Quest6[vic] < 3 &&  ZomDam[vic] >= 40000)
+		if(Quest6[vic] < 3 &&  ZomDam[vic] >= 50000 && !TrieKeyExists(qDone[19], VSteamID))
 		{
 			Saved_Points[vic]++
 			Quest6[vic]++
 			ZomDam[vic] = 0
 			Save_MySql(vic)
 			Counter_add(vic)
+			TrieSetCell(qDone[19],VSteamID, 1)
 		}
 	}
 }
@@ -383,13 +497,19 @@ public client_disconnect(id)
 	HumDam[id] = 0
 	ZomDam[id] = 0
 	IsHuman[id] = 0
+	Loaded[id]=false;
 }
 public zp_fw_core_cure_post(id,a)
 	IsHuman[id] = 0
 	
 public zp_fw_core_infect_post(id, a)
-	IsHuman[id] = 0
-	
+{
+	if(a != 0 && a != id)
+	{
+		Score[a]+= 3
+		IsHuman[id] = 0
+	}
+}
 public zp_fw_gamemodes_start(mod)
 {
 	if (mod != Mod[0] && mod != Mod[1])
@@ -398,13 +518,19 @@ public zp_fw_gamemodes_start(mod)
 	{
 		if(!is_user_connected(id))
 			continue
-		if(zp_core_is_zombie(id))
-			continue;
+		//if(zp_core_is_zombie(id))
+			//continue;
 		IsHuman[id] = 1
+		ColorChat(id,GREEN, "[GC]^3 say ^4/c^3 to see your challenge progress")
 	}
 }
 public zp_fw_gamemodes_end()
 {
+	if(Round < 2)
+	{
+		Round++
+		return;
+	}
 	new id
 	for (id = 1; id <= get_maxplayers(); id++)
 	{
@@ -412,10 +538,11 @@ public zp_fw_gamemodes_end()
 			continue;
 		ZomDam[id] = 0
 		HumDam[id] = 0
-		if(IsHuman[id])
+		if(IsHuman[id] && is_user_alive(id))
 		{
 			Saved_Points[id]++
 			Save_MySql(id)
+			Counter_add(id)
 		}
 
 	}
