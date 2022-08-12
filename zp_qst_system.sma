@@ -54,9 +54,9 @@ public plugin_cfg()
 	Mod[1] = zp_gamemodes_get_id("Multiple Infection Mode")
 }
 public Counter(id)
-	ColorChat(id, GREEN, "[GC]^3 You've compeleted^4 %d Challenges", r_points(id))
+	ColorChat(id, GREEN, "[GC]^3 You've completed^4 %d Challenges", r_points(id))
 public Counter_add(id)
-	ColorChat(id, GREEN, "[GC]^3 You've compeleted^4 a challenge!^3 Your current completed challenges are:^4 %d", r_points(id))	
+	ColorChat(id, GREEN, "[GC]^3 You've completed^4 a challenge!^3 Your current completed challenges are:^4 %d", r_points(id))	
 public r_points(id) return Saved_Points[id];
 public s_points(id, num) Saved_Points[id] = num;
 public s_quest(id, quest, num)
@@ -79,32 +79,32 @@ public challenges_menu(id)
 	new DamTxt[6][128]
 	new SteamID[34]
 	get_user_authid(id, SteamID,charsmax(SteamID))
-	formatex(ScoreTxt[0], charsmax(ScoreTxt[]), "[%d/200] Score", Score[id])	
-	formatex(ScoreTxt[1], charsmax(ScoreTxt[]), "[%d/250] Score", Score[id])
-	formatex(ScoreTxt[2], charsmax(ScoreTxt[]), "[%d/300] Score", Score[id])
-	formatex(ScoreTxt[3], charsmax(ScoreTxt[]), "[%d/350] Score", Score[id])	
-	formatex(ScoreTxt[4], charsmax(ScoreTxt[]), "[%d/400] Score", Score[id])
+	formatex(ScoreTxt[0], charsmax(ScoreTxt[]), "Get [%d/200] Score", Score[id])	
+	formatex(ScoreTxt[1], charsmax(ScoreTxt[]), "Get [%d/250] Score", Score[id])
+	formatex(ScoreTxt[2], charsmax(ScoreTxt[]), "Get [%d/300] Score", Score[id])
+	formatex(ScoreTxt[3], charsmax(ScoreTxt[]), "Get [%d/350] Score", Score[id])	
+	formatex(ScoreTxt[4], charsmax(ScoreTxt[]), "Get [%d/400] Score", Score[id])
 	
-	formatex(KillsTxt[0], charsmax(KillsTxt[]), "[%d/200] Kills", Kills[id])	
-	formatex(KillsTxt[1], charsmax(KillsTxt[]), "[%d/250] Kills", Kills[id])
-	formatex(KillsTxt[2], charsmax(KillsTxt[]), "[%d/300] Kills", Kills[id])	
+	formatex(KillsTxt[0], charsmax(KillsTxt[]), "Get [%d/50] Kills", Kills[id])	
+	formatex(KillsTxt[1], charsmax(KillsTxt[]), "Get [%d/75] Kills", Kills[id])
+	formatex(KillsTxt[2], charsmax(KillsTxt[]), "Get [%d/100] Kills", Kills[id])	
 	
-	formatex(DeathsTxt[0], charsmax(DeathsTxt[]), "[%d/15] Deaths", Deaths[id])
-	formatex(DeathsTxt[1], charsmax(DeathsTxt[]), "[%d/25] Deaths", Deaths[id])
-	formatex(DeathsTxt[2], charsmax(DeathsTxt[]), " [%d/40] Deaths", Deaths[id])
+	formatex(DeathsTxt[0], charsmax(DeathsTxt[]), "Get [%d/10] Deaths", Deaths[id])
+	formatex(DeathsTxt[1], charsmax(DeathsTxt[]), "Get [%d/15] Deaths", Deaths[id])
+	formatex(DeathsTxt[2], charsmax(DeathsTxt[]), "Get [%d/20] Deaths", Deaths[id])
 	
-	formatex(DamTxt[0], charsmax(DamTxt[]), "Deal [%d/50000] Damage", HumDam[id])
-	formatex(DamTxt[1], charsmax(DamTxt[]), "Deal [%d/75000] Damage", HumDam[id])
-	formatex(DamTxt[2], charsmax(DamTxt[]), "Deal [%d/100000] Damage", HumDam[id])
+	formatex(DamTxt[0], charsmax(DamTxt[]), "Deal [%d/100000] Damage", HumDam[id])
+	formatex(DamTxt[1], charsmax(DamTxt[]), "Deal [%d/150000] Damage", HumDam[id])
+	formatex(DamTxt[2], charsmax(DamTxt[]), "Deal [%d/200000] Damage", HumDam[id])
 	
-	formatex(DamTxt[3], charsmax(DamTxt[]), "Take [%d/25000] Damage", ZomDam[id])
-	formatex(DamTxt[4], charsmax(DamTxt[]), "Take [%d/40000] Damage", ZomDam[id])
-	formatex(DamTxt[5], charsmax(DamTxt[]), "Take [%d/50000] Damage", ZomDam[id])	
+	formatex(DamTxt[3], charsmax(DamTxt[]), "Take [%d/40000] Damage", ZomDam[id])
+	formatex(DamTxt[4], charsmax(DamTxt[]), "Take [%d/60000] Damage", ZomDam[id])
+	formatex(DamTxt[5], charsmax(DamTxt[]), "Take [%d/80000] Damage", ZomDam[id])	
 	
 	if(Loaded[id])
-		formatex(Title,charsmax(Title),"Your compeleted challenges:\y %d\w^nChallenge list:",r_points(id))
+		formatex(Title,charsmax(Title),"Your completed challenges:\y %d\w^nChallenge list:",r_points(id))
 	else
-		formatex(Title,charsmax(Title),"Your compeleted challenges:\w^nChallenge list:")
+		formatex(Title,charsmax(Title),"Your completed challenges:\w^nChallenge list:")
 	new MyM = menu_create(Title,"MQuest",0)
 	if(Score[id] < 200)
 		menu_additem(MyM, ScoreTxt[0])
@@ -117,33 +117,36 @@ public challenges_menu(id)
 	if(Score[id] < 400)
 		menu_additem(MyM, ScoreTxt[4])
 		
-	if(Kills[id] < 30)
+	if(Kills[id] < 50)
 		menu_additem(MyM, KillsTxt[0])
-	if(Kills[id] < 45)	
+	if(Kills[id] < 75)	
 		menu_additem(MyM, KillsTxt[1])
-	if(Kills[id] < 60)
+	if(Kills[id] < 100)
 		menu_additem(MyM, KillsTxt[2])
 		
-	if(Deaths[id] < 15)
+	if(Deaths[id] < 10)
 		menu_additem(MyM, DeathsTxt[0])
-	if(Deaths[id] < 25)	
+	if(Deaths[id] < 15)	
 		menu_additem(MyM, DeathsTxt[1])
-	if(Deaths[id] < 40)
+	if(Deaths[id] < 20)
 		menu_additem(MyM, DeathsTxt[2])
-	if(HumDam[id] < 50000)	
+
+	if(HumDam[id] < 100000)	
 		menu_additem(MyM, DamTxt[0])
-	if(HumDam[id] < 75000)	
+	if(HumDam[id] < 150000)	
 		menu_additem(MyM, DamTxt[1])
-	if(HumDam[id] < 100000)
+	if(HumDam[id] < 200000)
 		menu_additem(MyM, DamTxt[2])
-	if(ZomDam[id] < 25000)
-		menu_additem(MyM, DamTxt[3])
+
 	if(ZomDam[id] < 40000)
+		menu_additem(MyM, DamTxt[3])
+	if(ZomDam[id] < 60000)
 		menu_additem(MyM, DamTxt[4])
-	if(ZomDam[id] < 50000)
+	if(ZomDam[id] < 80000)
 		menu_additem(MyM, DamTxt[5])
-	menu_additem(MyM, "Kill 3,4,5 zombies with 1 RC")
-	menu_additem(MyM, "Infect 6,7,8 humans with 1 bomb")
+
+	menu_additem(MyM, "Kill 3,4,5 zombies with 1 Remoted Controlled Bomb")
+	menu_additem(MyM, "Infect 5,6,7 humans with 1 Infection Bomb")
 	
 	menu_display(id,MyM)
 	//menu_additem(MyM, "Survive a infection round without getting rekt")
@@ -243,7 +246,7 @@ public register_client(FailState,Handle:Query,Error[],Errcode,Data[],DataSize)
 		Quest5[id] = SQL_ReadResult(Query, 7)
 		Quest6[id] = SQL_ReadResult(Query, 8)
 		Loaded[id]=true;
-		format(Text, charsmax(Text), "[ %d ] quests Loaded for [ %s ] [ %s ] " , r_points(id) ,iPlayerNick, szSteamId)
+		format(Text, charsmax(Text), "[ %d ] Challenges Loaded for [ %s ] [ %s ] " , r_points(id) ,iPlayerNick, szSteamId)
 		ZP_PointsLog(Text)
 	}
         //r_points(id, Saved_Points[id])
@@ -313,9 +316,9 @@ public Client_MassInf(id, kills)
 	new qDoneL[4]
 	for(new qL;qL < 3;qL++)
 		qDoneL[qL] = 0
-	if(kills >= 6)
+	if(kills >= 5)
 	{
-		if(kills >= 6 && Quest1[id] < 3 && !qDoneL[0])
+		if(kills >= 5 && Quest1[id] < 3 && !qDoneL[0])
 		{
 			Saved_Points[id]++
 			Quest1[id]++
@@ -323,7 +326,7 @@ public Client_MassInf(id, kills)
 			Counter_add(id)
 			qDoneL[0] = 1
 		}
-		if(kills >= 7 && Quest2[id] < 3 && !qDoneL[1])
+		if(kills >= 6 && Quest2[id] < 3 && !qDoneL[1])
 		{
 			Saved_Points[id]++
 			Quest2[id]++
@@ -331,7 +334,7 @@ public Client_MassInf(id, kills)
 			Counter_add(id)
 			qDoneL[1] = 1
 		}
-		if(kills >= 8 && Quest3[id] < 3 && !qDoneL[2])
+		if(kills >= 7 && Quest3[id] < 3 && !qDoneL[2])
 		{
 			Saved_Points[id]++
 			MassInfS[id] = 0
@@ -362,23 +365,23 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 	Deaths[vic]++
 	Kills[att]++
 	IsHuman[vic] = 0
-	if(Kills[att] >= 30)
+	if(Kills[att] >= 50)
 	{
-		if(Kills[att] >= 30 && !TrieKeyExists(qDone[3], ASteamID))
+		if(Kills[att] >= 50 && !TrieKeyExists(qDone[3], ASteamID))
 		{
 			Saved_Points[vic]++
 			Save_MySql(vic)
 			Counter_add(vic)
 			TrieSetCell(qDone[3],VSteamID, 1)
 		}
-		else if(Kills[att] >= 45 && !TrieKeyExists(qDone[4], ASteamID))
+		else if(Kills[att] >= 75 && !TrieKeyExists(qDone[4], ASteamID))
 		{
 			Saved_Points[vic]++
 			Save_MySql(vic)	
 			Counter_add(vic)
 			TrieSetCell(qDone[4],VSteamID, 1)
 		}
-		else if(Kills[att] >= 60 && !TrieKeyExists(qDone[5], ASteamID))
+		else if(Kills[att] >= 100 && !TrieKeyExists(qDone[5], ASteamID))
 		{
 			Saved_Points[vic]++
 			Deaths[vic] = 0
@@ -426,23 +429,23 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 			TrieSetCell(qDone[10],ASteamID, 1)
 		}
 	}
-	if(Deaths[vic] >= 15)
+	if(Deaths[vic] >= 10)
 	{
-		if(Deaths[vic] >= 15 && !TrieKeyExists(qDone[11], VSteamID))
+		if(Deaths[vic] >= 10 && !TrieKeyExists(qDone[11], VSteamID))
 		{
 			Saved_Points[vic]++
 			Save_MySql(vic)
 			Counter_add(vic)
 			TrieSetCell(qDone[11],VSteamID, 1)
 		}
-		else if(Deaths[vic] >= 25 && !TrieKeyExists(qDone[12], VSteamID))
+		else if(Deaths[vic] >= 15 && !TrieKeyExists(qDone[12], VSteamID))
 		{
 			Saved_Points[vic]++
 			Save_MySql(vic)	
 			Counter_add(vic)
 			TrieSetCell(qDone[12],VSteamID, 1)
 		}
-		else if(Deaths[vic] >= 40 && !TrieKeyExists(qDone[13], VSteamID))
+		else if(Deaths[vic] >= 20 && !TrieKeyExists(qDone[13], VSteamID))
 		{
 			Saved_Points[vic]++
 			Deaths[vic] = 0
@@ -470,17 +473,17 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 		HumDam[att] += damage
 	}
 	new ASteamID[34], VSteamID[34]
-	if(HumDam[att] >= 50000)
+	if(HumDam[att] >= 100000)
 	{
 		get_user_authid(att, ASteamID,charsmax(ASteamID))
-		if(HumDam[att] >= 50000 && !TrieKeyExists(qDone[14], ASteamID))
+		if(HumDam[att] >= 100000 && !TrieKeyExists(qDone[14], ASteamID))
 		{
 			Saved_Points[att]++
 			Save_MySql(att)
 			Counter_add(att)
 			TrieSetCell(qDone[14],ASteamID, 1)
 		}
-		if(HumDam[att] >= 75000 && !TrieKeyExists(qDone[15], ASteamID))
+		if(HumDam[att] >= 150000 && !TrieKeyExists(qDone[15], ASteamID))
 		{
 			Saved_Points[att]++
 			Save_MySql(att)
@@ -488,7 +491,7 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 			TrieSetCell(qDone[15],ASteamID, 1)
 
 		}
-		if(HumDam[att] >= 100000 && !TrieKeyExists(qDone[16], ASteamID))
+		if(HumDam[att] >= 200000 && !TrieKeyExists(qDone[16], ASteamID))
 		{
 			Saved_Points[att]++
 			Save_MySql(att)
@@ -497,11 +500,11 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 
 		}
 	}
-	if(ZomDam[vic] >= 25000)
+	if(ZomDam[vic] >= 40000)
 	{
 		
 		get_user_authid(vic, VSteamID,charsmax(VSteamID))
-		if(Quest4[vic] < 3 &&  ZomDam[vic] >= 25000 && !TrieKeyExists(qDone[17], VSteamID))
+		if(Quest4[vic] < 3 &&  ZomDam[vic] >= 40000 && !TrieKeyExists(qDone[17], VSteamID))
 		{
 			Saved_Points[vic]++
 			Quest4[vic]++
@@ -509,7 +512,7 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 			Counter_add(vic)
 			TrieSetCell(qDone[17],VSteamID, 1)
 		}
-		if(Quest5[vic] < 3 &&  ZomDam[vic] >= 40000 && !TrieKeyExists(qDone[18], VSteamID))
+		if(Quest5[vic] < 3 &&  ZomDam[vic] >= 60000 && !TrieKeyExists(qDone[18], VSteamID))
 		{
 			Saved_Points[vic]++
 			Quest5[vic]++
@@ -517,7 +520,7 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 			Counter_add(vic)
 			TrieSetCell(qDone[18],VSteamID, 1)
 		}
-		if(Quest6[vic] < 3 &&  ZomDam[vic] >= 50000 && !TrieKeyExists(qDone[19], VSteamID))
+		if(Quest6[vic] < 3 &&  ZomDam[vic] >= 80000 && !TrieKeyExists(qDone[19], VSteamID))
 		{
 			Saved_Points[vic]++
 			Quest6[vic]++
@@ -559,7 +562,7 @@ public zp_fw_gamemodes_start(mod)
 		//if(zp_core_is_zombie(id))
 			//continue;
 		IsHuman[id] = 1
-		ColorChat(id,GREEN, "[GC]^3 say ^4/c^3 to see your challenge progress")
+		ColorChat(id,GREEN, "[GC]^3 say ^4/challenges^3 to see your challenge progress")
 	}
 }
 public zp_fw_gamemodes_end()
