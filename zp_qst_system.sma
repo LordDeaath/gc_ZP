@@ -9,7 +9,7 @@
 #include <colorchat>
 
 #define PLUGIN "Q + Logger"
-#define VERSION "2.0"
+#define VERSION "1.5"
 #define AUTHOR "Lord. Death."
 
 //  Mysql Information
@@ -21,7 +21,7 @@ new Db[]     = "zp_stats"
 new Handle:g_SqlTuple
 new g_Error[512]
 new Saved_Points[33], Quest1[33],Quest2[33],Quest3[33],Quest4[33],Quest5[33],Quest6[33]
-new ZomDam[33], HumDam[33], Score[33], Deaths[33], MassInfS[33]
+new ZomDam[33], HumDam[33], Score[33], Deaths[33], MassInfS[33],Kills[33]
 new Mod[2], IsHuman[33], Round
 new bool:Loaded[33]
 //new QuestDone[33][12]
@@ -34,7 +34,7 @@ public plugin_init() {
 	register_clcmd("say /c", "challenges_menu")
 	//register_clcmd("say /load", "Load_MySql")
 	//register_clcmd("say /loaded", "load_points")
-	for(new q = 5;q < 20; q++)
+	for(new q = 2;q < 20; q++)
 		qDone[q] = TrieCreate()
 	//TrieSetCell(
 	set_task(2.0,"MySql_Init") // set a task to activate the mysql_init
@@ -74,7 +74,7 @@ public s_quest(id, quest, num)
 }
 public challenges_menu(id)
 {
-	new Title[128], ScoreTxt[5][128]
+	new Title[128], ScoreTxt[5][128], KillsTxt[5][128]
 	new DeathsTxt[5][128]
 	new DamTxt[6][128]
 	new SteamID[34]
@@ -84,6 +84,10 @@ public challenges_menu(id)
 	formatex(ScoreTxt[2], charsmax(ScoreTxt[]), "[%d/300] Score", Score[id])
 	formatex(ScoreTxt[3], charsmax(ScoreTxt[]), "[%d/350] Score", Score[id])	
 	formatex(ScoreTxt[4], charsmax(ScoreTxt[]), "[%d/400] Score", Score[id])
+	
+	formatex(KillsTxt[0], charsmax(KillsTxt[]), "[%d/200] Kills", Kills[id])	
+	formatex(KillsTxt[1], charsmax(KillsTxt[]), "[%d/250] Kills", Kills[id])
+	formatex(KillsTxt[2], charsmax(KillsTxt[]), "[%d/300] Kills", Kills[id])	
 	
 	formatex(DeathsTxt[0], charsmax(DeathsTxt[]), "[%d/15] Deaths", Deaths[id])
 	formatex(DeathsTxt[1], charsmax(DeathsTxt[]), "[%d/25] Deaths", Deaths[id])
@@ -112,6 +116,14 @@ public challenges_menu(id)
 		menu_additem(MyM, ScoreTxt[3])
 	if(Score[id] < 400)
 		menu_additem(MyM, ScoreTxt[4])
+		
+	if(Kills[id] < 30)
+		menu_additem(MyM, KillsTxt[0])
+	if(Kills[id] < 45)	
+		menu_additem(MyM, KillsTxt[1])
+	if(Kills[id] < 60)
+		menu_additem(MyM, KillsTxt[2])
+		
 	if(Deaths[id] < 15)
 		menu_additem(MyM, DeathsTxt[0])
 	if(Deaths[id] < 25)	
@@ -168,7 +180,7 @@ public MySql_Init()
 public plugin_end()
 {
     SQL_FreeHandle(g_SqlTuple)
-    for(new q = 5;q < 20; q++)
+    for(new q = 2;q < 20; q++)
 	TrieDestroy(qDone[q])
 } 
 
@@ -348,7 +360,33 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 	
 	Score[att] += 3
 	Deaths[vic]++
+	Kills[att]++
 	IsHuman[vic] = 0
+	if(Kills[att] >= 30)
+	{
+		if(Kills[att] >= 30 && !TrieKeyExists(qDone[3], ASteamID))
+		{
+			Saved_Points[vic]++
+			Save_MySql(vic)
+			Counter_add(vic)
+			TrieSetCell(qDone[3],VSteamID, 1)
+		}
+		else if(Kills[att] >= 45 && !TrieKeyExists(qDone[4], ASteamID))
+		{
+			Saved_Points[vic]++
+			Save_MySql(vic)	
+			Counter_add(vic)
+			TrieSetCell(qDone[4],VSteamID, 1)
+		}
+		else if(Kills[att] >= 60 && !TrieKeyExists(qDone[5], ASteamID))
+		{
+			Saved_Points[vic]++
+			Deaths[vic] = 0
+			Save_MySql(vic)	
+			Counter_add(vic)
+			TrieSetCell(qDone[5],VSteamID, 1)
+		}
+	}
 	if(Score[att] >= 200)
 	{
 		if(Score[att] >= 200 && !TrieKeyExists(qDone[6], ASteamID))
@@ -388,7 +426,7 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 			TrieSetCell(qDone[10],ASteamID, 1)
 		}
 	}
-	if(Deaths[att] >= 15)
+	if(Deaths[vic] >= 15)
 	{
 		if(Deaths[vic] >= 15 && !TrieKeyExists(qDone[11], VSteamID))
 		{
