@@ -89,9 +89,9 @@ public challenges_menu(id)
 	formatex(KillsTxt[1], charsmax(KillsTxt[]), "Get [%d/75] Kills", Kills[id])
 	formatex(KillsTxt[2], charsmax(KillsTxt[]), "Get [%d/100] Kills", Kills[id])	
 	
-	formatex(DeathsTxt[0], charsmax(DeathsTxt[]), "Get [%d/10] Deaths", Deaths[id])
-	formatex(DeathsTxt[1], charsmax(DeathsTxt[]), "Get [%d/15] Deaths", Deaths[id])
-	formatex(DeathsTxt[2], charsmax(DeathsTxt[]), "Get [%d/20] Deaths", Deaths[id])
+	formatex(DeathsTxt[0], charsmax(DeathsTxt[]), "Get [%d/20] Deaths", Deaths[id])
+	formatex(DeathsTxt[1], charsmax(DeathsTxt[]), "Get [%d/30] Deaths", Deaths[id])
+	formatex(DeathsTxt[2], charsmax(DeathsTxt[]), "Get [%d/40] Deaths", Deaths[id])
 	
 	formatex(DamTxt[0], charsmax(DamTxt[]), "Deal [%d/100000] Damage", HumDam[id])
 	formatex(DamTxt[1], charsmax(DamTxt[]), "Deal [%d/150000] Damage", HumDam[id])
@@ -106,6 +106,7 @@ public challenges_menu(id)
 	else
 		formatex(Title,charsmax(Title),"Your completed challenges:\w^nChallenge list:")
 	new MyM = menu_create(Title,"MQuest",0)
+
 	if(Score[id] < 200)
 		menu_additem(MyM, ScoreTxt[0])
 	if(Score[id] < 250)	
@@ -124,11 +125,11 @@ public challenges_menu(id)
 	if(Kills[id] < 100)
 		menu_additem(MyM, KillsTxt[2])
 		
-	if(Deaths[id] < 10)
-		menu_additem(MyM, DeathsTxt[0])
-	if(Deaths[id] < 15)	
-		menu_additem(MyM, DeathsTxt[1])
 	if(Deaths[id] < 20)
+		menu_additem(MyM, DeathsTxt[0])
+	if(Deaths[id] < 30)	
+		menu_additem(MyM, DeathsTxt[1])
+	if(Deaths[id] < 40)
 		menu_additem(MyM, DeathsTxt[2])
 
 	if(HumDam[id] < 100000)	
@@ -365,28 +366,28 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 	Deaths[vic]++
 	Kills[att]++
 	IsHuman[vic] = 0
+
 	if(Kills[att] >= 50)
 	{
 		if(Kills[att] >= 50 && !TrieKeyExists(qDone[3], ASteamID))
 		{
-			Saved_Points[vic]++
-			Save_MySql(vic)
-			Counter_add(vic)
+			Saved_Points[att]++
+			Save_MySql(att)
+			Counter_add(att)
 			TrieSetCell(qDone[3],VSteamID, 1)
 		}
 		else if(Kills[att] >= 75 && !TrieKeyExists(qDone[4], ASteamID))
 		{
-			Saved_Points[vic]++
-			Save_MySql(vic)	
-			Counter_add(vic)
+			Saved_Points[att]++
+			Save_MySql(att)	
+			Counter_add(att)
 			TrieSetCell(qDone[4],VSteamID, 1)
 		}
 		else if(Kills[att] >= 100 && !TrieKeyExists(qDone[5], ASteamID))
 		{
-			Saved_Points[vic]++
-			Deaths[vic] = 0
-			Save_MySql(vic)	
-			Counter_add(vic)
+			Saved_Points[att]++
+			Save_MySql(att)	
+			Counter_add(att)
 			TrieSetCell(qDone[5],VSteamID, 1)
 		}
 	}
@@ -423,32 +424,30 @@ public client_death(att,vic,wpnindex,hitplace,TK)
 		else if(Score[att] >= 400 && !TrieKeyExists(qDone[10], ASteamID))
 		{
 			Saved_Points[att]++
-			Score[att] = 0
 			Save_MySql(att)	
 			Counter_add(att)
 			TrieSetCell(qDone[10],ASteamID, 1)
 		}
 	}
-	if(Deaths[vic] >= 10)
+	if(Deaths[vic] >= 20)
 	{
-		if(Deaths[vic] >= 10 && !TrieKeyExists(qDone[11], VSteamID))
+		if(Deaths[vic] >= 20 && !TrieKeyExists(qDone[11], VSteamID))
 		{
 			Saved_Points[vic]++
 			Save_MySql(vic)
 			Counter_add(vic)
 			TrieSetCell(qDone[11],VSteamID, 1)
 		}
-		else if(Deaths[vic] >= 15 && !TrieKeyExists(qDone[12], VSteamID))
+		else if(Deaths[vic] >= 30 && !TrieKeyExists(qDone[12], VSteamID))
 		{
 			Saved_Points[vic]++
 			Save_MySql(vic)	
 			Counter_add(vic)
 			TrieSetCell(qDone[12],VSteamID, 1)
 		}
-		else if(Deaths[vic] >= 20 && !TrieKeyExists(qDone[13], VSteamID))
+		else if(Deaths[vic] >= 40 && !TrieKeyExists(qDone[13], VSteamID))
 		{
 			Saved_Points[vic]++
-			Deaths[vic] = 0
 			Save_MySql(vic)	
 			Counter_add(vic)
 			TrieSetCell(qDone[13],VSteamID, 1)
@@ -473,6 +472,7 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 		HumDam[att] += damage
 	}
 	new ASteamID[34], VSteamID[34]
+
 	if(HumDam[att] >= 100000)
 	{
 		get_user_authid(att, ASteamID,charsmax(ASteamID))
@@ -524,7 +524,6 @@ public client_damage(att,vic,damage,wpnindex,hitplace,TA)
 		{
 			Saved_Points[vic]++
 			Quest6[vic]++
-			ZomDam[vic] = 0
 			Save_MySql(vic)
 			Counter_add(vic)
 			TrieSetCell(qDone[19],VSteamID, 1)
@@ -535,6 +534,8 @@ public client_putinserver(id) Load_MySql(id)
 public client_disconnect(id)
 {
 	Save_MySql(id)
+	Kills[id] = 0
+	Deaths[id] = 0
 	HumDam[id] = 0
 	ZomDam[id] = 0
 	IsHuman[id] = 0
