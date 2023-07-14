@@ -1,0 +1,40 @@
+#include <amxmodx>
+#include <discord>
+#include <colorchat>
+
+#define ADISCORD ADMIN_LEVEL_G //Admin flag to use
+
+static const webHook[] = "chat";
+
+public plugin_init()
+{
+    register_plugin("[Discord] Announce/Pings", "1.0", "Lord. Death.");
+
+    register_clcmd("say", "sayCommand");
+}
+
+public sayCommand(id)
+{	
+	new message[191], name[32], pin[48]
+	read_args(message, 190)
+	remove_quotes(message)
+	get_user_name(id, name, 31)
+	if(message[0] != '&')
+		return PLUGIN_CONTINUE
+	if(message[1] == '!')
+		formatex(pin, charsmax(pin),"[](@everyone)")
+	else formatex(pin, charsmax(pin),"")
+	replace_all(message, 190, "&", "")
+	replace_all(message, 190, "!", "")
+	if(!(get_user_flags(id) & ADISCORD))
+		return PLUGIN_CONTINUE
+	if (Discord_StartMessage())	
+	{
+		Discord_SetStringParam(USERNAME, "Announcement");
+		Discord_SetStringParam(CONTENT, pin);
+		Discord_AddField(name, message);
+		Discord_SendMessage(webHook);
+	}
+	ColorChat(id,GREEN,"[Discord]^3 %s:^1 %s",name, message)
+	return PLUGIN_HANDLED;
+}

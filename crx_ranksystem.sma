@@ -7,6 +7,7 @@
 #include <nvault>
 #include <sqlx>
 #include <zp50_ammopacks>
+#include <zp50_colorchat>
 
 new Trie:g_tAP
 
@@ -223,6 +224,7 @@ new g_fwdUserLevelUpdated
 new g_fwdUserReceiveXP
 new g_fwdUserXPUpdated
 new g_fwdUserNameChanged
+new bool:XtraXP, g_iCvars[3]
 
 // !!!
 public amxbans_admin_connect(id)
@@ -250,6 +252,7 @@ public plugin_init()
 		register_event("HLTV", "OnFreezeTimeStart", "a", "1=0", "2=0")
 		register_logevent("OnRoundStart", 2, "1=Round_Start")
 	}
+	register_event("HLTV", "Event_NewRound", "a", "1=0", "2=0")
 
 	if(g_eSettings[SAVE_INTERVAL] == SAVE_ON_ROUND_END)
 	{
@@ -267,6 +270,9 @@ public plugin_init()
 	register_clcmd("say_team /hudinfo",      "Cmd_HudInfo",     ADMIN_ALL)
 	register_concmd("crxranks_give_xp",      "Cmd_GiveXP",      ADMIN_RCON, "<nick|#userid|authid> <amount>")
 	register_concmd("crxranks_reset_xp",     "Cmd_ResetXP",     ADMIN_RCON, "<nick|#userid>")
+	g_iCvars[0] = register_cvar( "xxp_on", "1" );
+	g_iCvars[1] = register_cvar( "xxp_start_time", "22" );
+	g_iCvars[2] = register_cvar( "xxp_end_time", "10" );
 
 	if(g_eSettings[LEVELUP_SCREEN_FADE_ENABLED] || g_eSettings[LEVELDN_SCREEN_FADE_ENABLED])
 	{
@@ -1072,6 +1078,21 @@ public OnRoundStart()
 {
 	g_bFreezeTime = false
 }
+public Event_NewRound()
+{
+	if( IsVipHour( get_pcvar_num( g_iCvars[ 1 ] ), get_pcvar_num( g_iCvars[ 2 ] ) ) )
+	{
+		XtraXP = true;
+		zp_colored_print(0, "^3 Happy Hour ^4On^3! ^4XP^3 is doubled^1!")
+	}
+	else
+		XtraXP = false;	
+}
+bool:IsVipHour( iStart, iEnd )
+{
+    new iHour; time( iHour );
+    return bool:( iStart < iEnd ? ( iStart <= iHour < iEnd ) : ( iStart <= iHour || iHour < iEnd ) )
+} 
 
 public OnRoundEnd()
 {
@@ -1171,13 +1192,7 @@ public OnPlayerKilled()
 
 	if(iAttacker == iVictim)
 	{
-		iTemp = get_xp_reward(iAttacker, XPREWARD_SUICIDE)
-		iReward += iTemp
-
-		if(should_skip(iTemp))
-		{
-			goto @GIVE_REWARD
-		}
+		return
 	}
 	else if(get_user_team(iAttacker) == get_user_team(iVictim))
 	{
@@ -1191,8 +1206,9 @@ public OnPlayerKilled()
 	}
 	else
 	{
-		iTemp = get_xp_reward(iAttacker, szWeapon)
-		
+		if(XtraXP)
+			iTemp = get_xp_reward(iAttacker, szWeapon) * 2
+		else iTemp = get_xp_reward(iAttacker, szWeapon)
 		iReward += iTemp
 
 		if(should_skip(iTemp))
@@ -1202,7 +1218,9 @@ public OnPlayerKilled()
 
 		if(read_data(3))
 		{
-			iTemp = get_xp_reward(iAttacker, XPREWARD_HEADSHOT)
+			if(XtraXP)
+				iTemp = get_xp_reward(iAttacker, XPREWARD_HEADSHOT) * 2
+			else iTemp = get_xp_reward(iAttacker, XPREWARD_HEADSHOT)
 			iReward += iTemp
 
 			if(should_skip(iTemp))
@@ -1210,8 +1228,9 @@ public OnPlayerKilled()
 				goto @GIVE_REWARD
 			}
 		}
-
-		iReward += get_xp_reward(iAttacker, XPREWARD_KILL)
+		if(XtraXP)
+			iReward += get_xp_reward(iAttacker, XPREWARD_KILL) * 2
+		else iReward += get_xp_reward(iAttacker, XPREWARD_KILL)
 	}
 
 	@GIVE_REWARD:

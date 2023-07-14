@@ -1,0 +1,365 @@
+#include <amxmodx>
+#include <zombieplague>
+#include <nvault>
+#include <zmvip>
+#include <colorchat>
+#include <zp50_log>
+#include <sqlx> 
+#include <targetex>
+#include <zp50_colorchat>
+
+#define NV_NAME "GET_VIP"
+#define TAG "[GC]"
+
+enum player_struct {
+    mtime,bool:ftime,key[64]
+}
+new g_player[33][player_struct];
+
+new cvar_save_type,cvar_time, cvar_max, MyLimit;
+
+//  Mysql Information
+new Host[]     = "74.91.123.158"
+new User[]    = "LordD"
+new Pass[]     = "jxdPq2SmA0mR"
+new Db[]     = "zp_skins"
+
+new Handle:g_SqlTuple
+new g_Error[512]
+new Saved_Points[33]
+new bool:Loaded[33]
+new Trie:g_Used
+
+public plugin_init() {
+
+	register_plugin("Free VIP [viptest]", "1.0", "Clauu | Lord. Death.");
+	    
+	cvar_save_type = register_cvar("get_vip_save_type","1"); // how to save data 1 by authid, 2 by ip or 3 by name
+	cvar_time = register_cvar("get_vip_cd","180"); // time in minutes, 720minutes=12hours it will be auto calculated
+	cvar_max = register_cvar("get_vip_max","3");
+	    
+	register_clcmd("say /viptest", "TryVipPre");
+	register_clcmd("say_team /viptest", "TryVipPre");
+	register_clcmd("say /tryvip", "TryVipPre");
+	register_clcmd("say /vt", "TryVipPre");
+	register_clcmd("say_team /tryvip", "TryVipPre");
+	register_clcmd("say_team /vt", "TryVipPre");
+	register_clcmd("amx_addtrys", "Cmd_AddTry", ADMIN_CFG, "amx_viptry <player> <tries> - Adds VIP tries to player")
+	set_task(2.0,"MySql_Init") // set a task to activate the mysql_init
+	g_Used = TrieCreate( ) // Create the trie...	
+}
+
+public plugin_end()
+	TrieDestroy(g_Used);
+
+public TryVipPre(id)
+{
+	new MyTxt[512]
+	formatex(MyTxt,charsmax(MyTxt), "VIP Tries remaining:\y %d^n\
+	\wYou can try out our VIP System during the current map.^n\
+	Keep in mind that:^n\
+	\r-You will lose it if you disconnect from the server^n\
+	\r-You will lose it when the current map is over.^n^n",Saved_Points[id])
+	new Mnu = menu_create(MyTxt, "class_pre")
+	menu_additem(Mnu,"Next","",0)
+	menu_setprop(Mnu, MPROP_EXIT, MEXIT_ALL );
+	menu_display(id, Mnu, 0 );	
+}
+public TryVipPre2(id)
+{
+	new  MyTxt2[512]
+	formatex(MyTxt2, charsmax(MyTxt2),"\y-We recommend you use it at the start of a map.^n\
+	\wDo you want to proceed with your try?^n^n")
+	new Mnu = menu_create(MyTxt2, "class_m")	
+	menu_additem(Mnu,"Yes","",0)
+	menu_additem(Mnu,"No","",0)
+	menu_setprop(Mnu, MPROP_EXIT, MEXIT_ALL );
+	menu_display(id, Mnu, 0 );
+}
+public class_pre(id, menu, item)
+{
+	switch( item )
+	{
+		case 0: TryVipPre2(id)
+	}
+}
+
+public class_m(id, menu, item)
+{
+	switch( item )
+	{
+		case 0:
+		{
+			if(Saved_Points[id] > 0)
+			{
+				cmd_ap(id)
+			}
+			else ColorChat(id,GREEN,"[GC]^3 You don't have enough ^4VIP^3 trys.")
+		}
+			
+		case 1: ColorChat(id,GREEN,"[GC]^3 Alright.")
+	}
+}
+
+public Cmd_AddTry(id, iLevel, iCid)
+{
+	if(!cmd_access(id, iLevel, iCid, 2))
+		return PLUGIN_HANDLED
+
+	new szArg[32], szTris[8], szTarget[32], idp, Trys
+	read_argv(1, szArg, charsmax(szArg))
+	read_argv(2, szTris, charsmax(szTris))
+	Trys = str_to_num(szTris)
+	new iPlayers[32], iPnum = cmd_targetex(id, szArg, iPlayers, szTarget, charsmax(szTarget), TARGETEX_OBEY_IMM_SINGLE, 0)
+
+	if(!iPnum)
+		return PLUGIN_HANDLED
+	for(new i; i < iPnum; i++)
+	{
+		idp = iPlayers[i]
+		Saved_Points[idp] += Trys
+		Save_MySql(idp)
+	}
+	new szName[32]
+	get_user_name(id, szName, charsmax(szName))
+	zp_colored_print(0, "^3%s ^3added ^4%d ^3to ^4%s", szName,Trys, szTarget)
+	return PLUGIN_HANDLED
+	
+}
+	
+public cmd_ap(id) {
+
+    new nv = nvault_open(NV_NAME);
+    
+    if(nv == INVALID_HANDLE) {
+        ColorChat(id,GREEN,"%s ^3VIP^1 test is ^4off.",TAG);
+        return;
+    }
+    new AuthID[35]
+    get_user_authid(id, AuthID,charsmax(AuthID))	
+    new txt_min[32];
+    new pminutes = get_pcvar_num(cvar_time);
+    build_time(pminutes,txt_min,charsmax(txt_min));
+    if( TrieKeyExists( g_Used, AuthID ) )
+    {
+    	ColorChat(id, GREEN, "[GC]^03 You've reloaded your^4 VIP.")
+	zv_set_user_flags(id, 17)// ZV_MAIN
+	return;
+    }
+    if(MyLimit >= get_pcvar_num(cvar_max))
+    {
+    	ColorChat(id,GREEN,"[GC]^3 Max Trial VIP ^4(%d).^3 try again nextmap.", get_pcvar_num(cvar_max) )
+	return;
+    }
+    if(g_player[id][ftime])
+    {
+    	TrieSetCell( g_Used, AuthID, 1)
+	ColorChat(id,GREEN,"[GC]^1 You are now ^3VIP^1 till the map is over.");
+	zv_set_user_flags(id, 17)// ZV_MAIN
+	g_player[id][ftime]=false;
+	nvault_touch(nv,g_player[id][key],g_player[id][mtime]=get_systime());
+	MyLimit++
+	Saved_Points[id]--
+	Save_MySql(id)
+	Log_MySql(id)
+	return;
+    }
+    
+    new user_time=get_systime()-g_player[id][mtime];
+    new diff_min=(user_time<(pminutes*60))?pminutes-(user_time/60):pminutes;
+    build_time(diff_min,txt_min,charsmax(txt_min));
+    
+    if(user_time>=(pminutes*60))
+    {
+    	TrieSetCell( g_Used, AuthID, 1)
+	ColorChat(id,GREEN,"[GC]^1 You are now ^3VIP^1 till the map is over.");
+	zv_set_user_flags(id, 17)
+	nvault_touch(nv,g_player[id][key],g_player[id][mtime]=get_systime());
+	MyLimit++
+	Saved_Points[id]--
+	Save_MySql(id)
+	Log_MySql(id)
+    }
+    else
+	ColorChat(id,GREEN,"[GC]^3 Retry again in^4 %s ^3to get free ^4VIP",txt_min);
+        
+    nvault_close(nv);
+}
+
+public client_putinserver(id) {
+        
+    new nv,data[32];
+    get_auth(id,g_player[id][key],charsmax(g_player[][key]));
+    g_player[id][mtime]=get_systime();
+    g_player[id][ftime]=false;
+    formatex(data,charsmax(data),"%d",g_player[id][mtime]);
+    
+    if((nv=nvault_open(NV_NAME))==INVALID_HANDLE)
+        return;
+    
+    if(!nvault_lookup(nv,g_player[id][key],data,charsmax(data),g_player[id][mtime])) {
+        nvault_set(nv,g_player[id][key],data);
+        g_player[id][ftime]=true;
+        g_player[id][mtime]=get_pcvar_num(cvar_time);
+    }
+    Load_MySql(id)
+    nvault_close(nv);
+}    
+
+public client_disconnect(id)
+{
+    	Loaded[id]=false;
+	g_player[id][mtime]=0;
+	g_player[id][ftime]=false;
+}
+/*
+public zp_fw_gamemodes_end()
+{
+	new id
+	for (id = 1; id <= get_maxplayers(); id++)
+	{
+		Save_MySql(id)
+	}
+
+}
+*/
+stock get_auth(id,data[],len)
+{
+	switch(get_pcvar_num(cvar_save_type))
+	{
+		case 1: get_user_authid(id,data,len);
+		case 2: get_user_ip(id,data,len,1);
+		case 3: get_user_name(id,data,len);
+	}
+}
+
+stock build_time(pminutes,data[],len)
+{
+    if(pminutes==1)
+        copy(data,len,"1 minute");
+    else if(pminutes!=1&&pminutes<60)
+        formatex(data,len,"%d minutes",pminutes);
+    else if(pminutes==60)
+        copy(data,len,"1 hour");
+    else {
+        new ptime=pminutes/60;
+        if(ptime*60==pminutes)
+            formatex(data,len,"%d %s",ptime,(ptime==1)?"hour":"hours");
+        else {
+            new diff=pminutes-ptime*60;
+            formatex(data,len,"%d %s and %d %s",ptime,(ptime==1)?"hour":"hours",diff,(diff==1)?"minute":"minutes");
+        }
+    }
+}
+public MySql_Init()
+{
+    g_SqlTuple = SQL_MakeDbTuple(Host,User,Pass,Db)
+   
+    new ErrorCode,Handle:SqlConnection = SQL_Connect(g_SqlTuple,ErrorCode,g_Error,charsmax(g_Error))
+    if(SqlConnection == Empty_Handle)
+        set_fail_state(g_Error)
+       
+    new Handle:Queries
+    Queries = SQL_PrepareQuery(SqlConnection,"CREATE TABLE IF NOT EXISTS trys (steamid varchar(32), nick varchar(32),exp INT(11))")
+
+    if(!SQL_Execute(Queries))
+    {
+        SQL_QueryError(Queries,g_Error,charsmax(g_Error))
+        set_fail_state(g_Error)
+       
+    }
+    
+    SQL_FreeHandle(Queries)
+   
+    SQL_FreeHandle(SqlConnection)   
+} 
+
+public Load_MySql(id)
+{
+    new szSteamId[32], szTemp[512], iPlayerNick[32]
+    get_user_authid(id, szSteamId, charsmax(szSteamId))
+    get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
+
+    new Data[1]
+    Data[0] = id
+    new Text[124]
+    format(Text, charsmax(Text), "[ %d ] Points Loaded for [ %s ] [ %s ] " , Saved_Points[id] ,iPlayerNick, szSteamId)
+    format(szTemp,charsmax(szTemp),"SELECT * FROM `trys` WHERE (`trys`.`steamid` = '%s')", szSteamId)
+    SQL_ThreadQuery(g_SqlTuple,"register_client",szTemp,Data,1)
+    //zp_log(Text)
+}
+
+public Log_MySql(id)
+{
+    new szSteamId[32], iPlayerNick[32]
+    get_user_authid(id, szSteamId, charsmax(szSteamId))
+    get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
+    new Text[124]
+    format(Text, charsmax(Text), "[ %s ] [ %s ] Tried VIP - Remaining tries: %d" ,iPlayerNick, szSteamId, Saved_Points[id])
+    zp_log(Text)
+}
+public register_client(FailState,Handle:Query,Error[],Errcode,Data[],DataSize)
+{
+    if(FailState == TQUERY_CONNECT_FAILED)
+    {
+        log_amx("Load - Could not connect to SQL database.  [%d] %s", Errcode, Error)
+    }
+    else if(FailState == TQUERY_QUERY_FAILED)
+    {
+        log_amx("Load Query failed. [%d] %s", Errcode, Error)
+    }
+
+    new id
+    id = Data[0]
+    
+    if(SQL_NumResults(Query) < 1) 
+    {
+        //.if there are no results found
+        
+        new szSteamId[32], iPlayerNick[32]
+        get_user_authid(id, szSteamId, charsmax(szSteamId)) // get user's steamid
+        get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
+        if (equal(szSteamId,"ID_PENDING"))
+            return PLUGIN_HANDLED
+            
+        new szTemp[512]
+        
+        // now we will insturt the values into our table.
+        format(szTemp,charsmax(szTemp),"INSERT INTO `trys` ( `steamid` , `nick` , `exp`) VALUES ('%s', '%s' ,'5');", szSteamId, iPlayerNick)
+        SQL_ThreadQuery(g_SqlTuple,"IgnoreHandle",szTemp)
+    } 
+    else 
+    {
+    	if(is_user_connected(id))
+	{
+    	Saved_Points[id] = SQL_ReadResult(Query, 2)
+	Loaded[id]=true;
+	}
+    }
+	
+    return PLUGIN_HANDLED
+} 
+
+public Save_MySql(id)
+{	
+	if(is_user_connected(id)&&Loaded[id])
+	{
+		new szSteamId[32],iPlayerNick[32], szTemp[512]
+		get_user_authid(id, szSteamId, charsmax(szSteamId))
+		get_user_name(id, iPlayerNick, charsmax(iPlayerNick))
+		new point = Saved_Points[id]
+		new Text[124]
+		format(Text, charsmax(Text), "[ %d ] Trys Saved for [ %s ] [ %s ] " , point,iPlayerNick, szSteamId)
+		format(szTemp,charsmax(szTemp),"UPDATE `trys` SET `exp` = '%i' WHERE `trys`.`steamid` = '%s'", point, szSteamId)
+		SQL_ThreadQuery(g_SqlTuple,"IgnoreHandle",szTemp)
+		//zp_log(Text)		
+	}
+    //client_print(0,print_chat,Text)
+} 
+
+public IgnoreHandle(FailState,Handle:Query,Error[],Errcode,Data[],DataSize)
+{
+	SQL_FreeHandle(Query)
+	return PLUGIN_HANDLED
+}
+

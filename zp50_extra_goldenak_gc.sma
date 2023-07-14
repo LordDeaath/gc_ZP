@@ -39,6 +39,8 @@ Cvars:
 #include <zmvip>
 #include <xs>
 #include <zp50_gamemodes>
+#include <targetex>
+
 
 #define is_valid_player(%1) (1 <= %1 <= 32)
 
@@ -104,6 +106,7 @@ public plugin_init()
 	RegisterHam(Ham_TraceAttack, "func_door_rotating", "CBaseEntity_TraceAttack_Post", 1);
 	RegisterHam(Ham_TraceAttack, "info_target", "CBaseEntity_TraceAttack_Post", 1);
 	register_forward( FM_CmdStart, "fw_CmdStart" )	
+	register_clcmd("zp_ak47", "cmd_ak", ADMIN_IMMUNITY, "zp_ak47 <player> - free golden AK")
 	
 	register_forward(FM_SetModel, "fw_SetModel");	
 	RegisterHam(Ham_Item_AddToPlayer, "weapon_ak47", "fw_AddToPlayer");
@@ -123,16 +126,25 @@ public client_connect(id)
 
 public client_disconnecteded(id)
 {
+	if(g_HasAk[id])
+		Purchases--
+		
 	g_HasAk[id] = false
 }
 
 public Death()
 {
-	g_HasAk[read_data(2)] = false
+	if(g_HasAk[read_data(2)])
+	{	
+		Purchases--
+		g_HasAk[read_data(2)] = false
+	}
 }
 
 public fwHamPlayerSpawnPost(id)
 {
+	if(g_HasAk[id])
+		Purchases--
 	g_HasAk[id] = false
 }
 
@@ -147,6 +159,8 @@ public plugin_precache()
 
 public zp_fw_core_infect_post(id)
 {
+	if(g_HasAk[id])
+		Purchases--
 	g_HasAk[id] = false
 }
 
@@ -370,14 +384,10 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 	return ZP_ITEM_DONT_SHOW;
 	
 	if(zp_gamemodes_get_current()!=Infection&&zp_gamemodes_get_current()!=Multi)
-	{
 		return ZP_ITEM_DONT_SHOW;
-	}
 
 	if(g_HasAk[id])
-	{
 		return ZP_ITEM_NOT_AVAILABLE;
-	}
 	
 	if(zv_get_user_flags(id)&ZV_MAIN)
 		return ZP_ITEM_AVAILABLE;
@@ -386,21 +396,13 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 	alive = 0;
 
 	for(i=1;i<33;i++)
-	{
 		if(is_user_alive(i))
-		{
 			alive++
-		}
-	}
 
-	if(alive<23)
-	{
-		limit=1
-	}
+	if(alive<=22)
+		limit= 2
 	else
-	{
-		limit=2
-	}
+		limit=3
 
 	if(Purchases>=limit)
 	{		
@@ -418,32 +420,8 @@ public zp_fw_items_select_post(player, itemid, ignorecost)
 	// This is not our item
 	if (itemid != g_itemid)
 	return;
-	
-	static limit, alive, i
-	alive = 0;
-
-	for(i=1;i<33;i++)
-	{
-		if(is_user_alive(i))
-		{
-			alive++
-		}
-	}
-
-	if(alive<23)
-	{
-		limit=1
-	}
-	else
-	{
-		limit=2
-	}
-
-	if(Purchases<limit)
-	{		
-		Purchases++;
-	}
-
+			
+	Purchases++;
 	drop_akm12(player);
 	drop_prim(player)
 	give_item(player, "weapon_ak47")
@@ -490,13 +468,35 @@ public native_drop_ak(id)
 }
 public native_give_ak(player)
 {
+	drop_akm12(player)
 	give_item(player, "weapon_ak47")
 	new weaponid = get_weaponid("weapon_ak47")
 	ExecuteHamB(Ham_GiveAmmo, player, MAXBPAMMO[weaponid], AMMOTYPE[weaponid], MAXBPAMMO[weaponid])
 	zp_colored_print(player,"You got^3 Golden AK-47")
 	g_HasAk[player] = true;
 }
+public cmd_ak(id, iLevel, iCid)
+{
+	if(!cmd_access(id, iLevel, iCid, 2))
+		return PLUGIN_HANDLED
 
+	new szArg[32], szTarget[32], idp
+	read_argv(1, szArg, charsmax(szArg))
+
+	new iPlayers[32], iPnum = cmd_targetex(id, szArg, iPlayers, szTarget, charsmax(szTarget), TARGETEX_OBEY_IMM_SINGLE, 0)
+
+	if(!iPnum)
+		return PLUGIN_HANDLED
+	for(new i; i < iPnum; i++)
+	{
+		idp = iPlayers[i]
+		native_give_ak(idp)
+	}
+	new szName[32]
+	get_user_name(id, szName, charsmax(szName))
+	zp_colored_print(0, "^1 %s ^3gave ^1%s ^3a ^4golden ak", szName, szTarget)
+	return PLUGIN_HANDLED	
+}
 stock drop_prim(id) 
 {
 	new weapons[32], num

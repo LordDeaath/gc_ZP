@@ -19,7 +19,7 @@ native zp_respawn_task_remove(id);
 
 new g_msgid_ClCorpse, g_MsgDeathMsg;
 
-new Trie:SpecTime;
+new Trie:SpecTime, pStat[33], Float:pLast[33];
 
 public plugin_init()
 {
@@ -108,7 +108,10 @@ public cmdBack(id)
 		set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_SET)
 		engclient_cmd(id, "jointeam", "5")	
 		engclient_cmd(id, "joinclass","5")	
-		set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_NOT)	
+		set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_NOT)
+		if(pStat[id])
+			zp_core_force_cure(id)
+		else zp_core_force_infect(id)
 	}
 	return PLUGIN_HANDLED;
 }
@@ -123,8 +126,14 @@ bool:SpecAllowed(id)
 	if(!is_user_alive(id))
 		return true;
 		
-	new CsTeams:team;
+	new CsTeams:team, Float:mTime;
 	team = cs_get_user_team(id)
+	mTime = get_gametime()
+	if(mTime - 15.0 <= pLast[id])
+	{
+		ColorChat(id, GREEN, "[GC]^3 You've to wait^4 %2.3f ^3 to use^4 /spec ^3again", 15.0 + (pLast[id] - mTime) )
+		return false;
+	}
 	for(new i = 1;i < 33;i++)
 	{
 		if(i==id) continue;
@@ -138,37 +147,27 @@ public Spec(id)
 {	
 	if(get_user_flags(id) & ADMIN_KICK)
 	{
-		if(is_user_alive(id))
-		{			
-			set_msg_block(g_msgid_ClCorpse, BLOCK_ONCE)	
-			set_pev(id, pev_health, 0.0);
-			set_pev(id, pev_deadflag, DEAD_DEAD);	
-		}	
+		if(is_user_alive(id))		
+			user_kill(id, 0)	
 		engclient_cmd(id, "jointeam", "6")						
 		zp_respawn_task_remove(id)
 		ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
+		pLast[id] = get_gametime()
+
 		return;
 	}
 
 	if(is_user_alive(id))
-	{		
-		set_pev(id, pev_health, 0.0);
-		set_pev(id, pev_deadflag, DEAD_DEAD);		
-		message_begin(MSG_BROADCAST, g_MsgDeathMsg)
-		write_byte(id)
-		write_byte(id)
-		write_byte(0)
-		write_string("world")
-		message_end()
-
-		new authid[32]
-		get_user_authid(id,authid,charsmax(authid))
-		TrieSetCell(SpecTime, authid, get_gametime())
-	}
-	
+		user_kill(id, 0)
+	new authid[32]
+	get_user_authid(id,authid,charsmax(authid))
+	TrieSetCell(SpecTime, authid, get_gametime())	
 	engclient_cmd(id, "jointeam", "6")	
 	zp_respawn_task_remove(id)
 	ColorChat(id,GREEN,"[GC]^03 Type ^04/back^03 to return from Spectator")
-	
+	if(zp_core_is_zombie(id))
+		pStat[id]  = 0
+	else pStat[id] = 1
+	pLast[id] = get_gametime()
 	return;
 }
