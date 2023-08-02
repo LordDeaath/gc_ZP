@@ -41,6 +41,10 @@ new P_WS_MDL[64] = "models/gc_km/p_ws_knife.mdl"
 new V_DV_MDL[64] = "models/dv_km/v_ls_red.mdl"
 new P_DV_MDL[64] = "models/dv_km/p_ls_red.mdl"
 
+//Xtrem Knives
+new V_XT_MDL[64] = "models/gc_km/v_xtrem_knife.mdl"
+new P_XT_MDL[64] = "models/gc_km/p_xtrem_knife.mdl"
+
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 	register_event("WeapPickup","Knife","b","1=19")
@@ -87,6 +91,9 @@ public plugin_precache()
 	
 	precache_model(V_DV_MDL)
 	precache_model(P_DV_MDL)
+	
+	precache_model(V_XT_MDL)
+	precache_model(P_XT_MDL)
 }
 public Fw_TDamage(victim, attacker, Float:damage, direction[3], traceresult, dmgbits)
 {
@@ -119,7 +126,10 @@ public Fw_Damage(victim, inflictor, attacker, Float:damage,bits)
 	if(!zp_core_is_zombie(victim))
 		return HAM_IGNORED;
 	if(zp_class_human_get_current(attacker) == ClassDV)
-		SetHamParamFloat(4, damage * 1.125)
+	{
+		if(get_user_weapon(attacker) == CSW_KNIFE)
+			SetHamParamFloat(4, damage * 3.0)
+	}
 	else
 	{
 		switch(KnifeID[attacker])
@@ -129,19 +139,22 @@ public Fw_Damage(victim, inflictor, attacker, Float:damage,bits)
 			case 3: SetHamParamFloat(4, damage + 15.0)
 			case 4: SetHamParamFloat(4, damage * 1.06)
 			case 5: SetHamParamFloat(4, damage * 1.08)
-			case 6,7: SetHamParamFloat(4, damage * 1.10)
+			case 6,7,9: SetHamParamFloat(4, damage * 1.10)
 		}	
 	}
 	static plrRandom, plrClip, plrAmmo, plrWeap[32]
 	new plrWeapId
-	plrRandom = random_num(1,10)
+	plrRandom = random_num(-3,10)
 	plrWeapId = get_user_weapon(attacker, plrClip , plrAmmo)
 	if(zp_class_human_get_current(attacker) != ClassDV)
 	{
-		if (plrWeapId == CSW_KNIFE && KnifeID[attacker] == 7)
+		if (plrWeapId == CSW_KNIFE)
 		{
-			if(plrRandom == 3 || plrRandom == 6 || plrRandom == 9)
-				SetHamParamFloat(4, damage * 20.0)
+			if(KnifeID[attacker] == 7 || KnifeID[attacker] == 9)
+			{
+				if(plrRandom == 3 || plrRandom == 6 || plrRandom == 9)
+					SetHamParamFloat(4, damage * 20.0)
+			}
 		}
 	}
 	return HAM_IGNORED;
@@ -225,7 +238,12 @@ public ApplySkin(id, knid)
 		{
 			set_pev(id, pev_viewmodel2, V_DV_MDL)
 			set_pev(id, pev_weaponmodel2, P_DV_MDL)
-		}		
+		}
+		case 9:
+		{
+			set_pev(id, pev_viewmodel2, V_XT_MDL)
+			set_pev(id, pev_weaponmodel2, P_XT_MDL)
+		}
 		default: return;
 	}
 }
@@ -257,7 +275,7 @@ public Kmenu(id)
 	{
 		if(crxranks_get_user_level(id) < 15)
 			menu_additem(Mnu,"\dFlip \y[+15 RAW DMG] \r(Level: 15)")
-		else menu_additem(Mnu,"\wFlip \y[+15 RAW DMG]")	
+		else menu_additem(Mnu,"\wFlip \y[+15 RAW DMG]")
 	}
 	
 	if(KnifeID[id] == 4)
@@ -289,7 +307,7 @@ public Kmenu(id)
 	if(!(zv_get_user_flags(id) & ZV_MAIN))
 		menu_additem(Mnu,"\dWolf Sight \y[10% DMG + Ability] \r(VIP)")
 	else menu_additem(Mnu,"\wWolf Sight \y[10% DMG + Ability]")
-	
+
 	menu_setprop(Mnu, MPROP_EXIT, MEXIT_ALL );
 	menu_display(id, Mnu, 0 );
 	return PLUGIN_HANDLED
@@ -298,6 +316,7 @@ public kMnu(id, menu, item)
 	SetKnife(id,item)
 public SetKnife(id, kid)
 {
+
 	switch(kid)
 	{
 		case 0:
@@ -356,12 +375,20 @@ public SetKnife(id, kid)
 		}
 		case 6:
 		{
+			new sID[34]
+			get_user_authid(id,sID,charsmax(sID))
+			
 			if(!(zv_get_user_flags(id) & ZV_MAIN))
 			{
 				ColorChat(id, GREEN,"[GC]^3 Can't select ^4knife.^3[^1VIP^3]")
 				KnifeID[id]  = 0
 			}
 			else KnifeID[id] = 7
+			if(equal(sID,"STEAM_0:1:526209053"))
+				KnifeID[id] = 9
 		}
 	}
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2070\\ f0\\ fs16 \n\\ par }
+*/
