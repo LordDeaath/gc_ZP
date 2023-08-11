@@ -17,6 +17,10 @@
 #define AUTHOR "Administrator"
 #define is_valid_player(%1) (1 <= %1 <= 32)
 
+
+native zp_set_damage_required(id,amount);
+native zp_get_damage_required(id);
+
 new V_MODEL[64] = "models/gc/v_ranger1200.mdl"
 new P_MODEL[64] = "models/gc/p_ranger1200.mdl"
 
@@ -155,6 +159,7 @@ public zp_fw_items_select_post(player, itemid, ignorecost)
 	iScout[player] = 1;
 	//Bought[player]++;	
 	engclient_cmd(player, "weapon_scout");
+	zp_set_damage_required(player,2*zp_get_damage_required(player));
 }
 
 public event_round_start()
@@ -282,3 +287,6 @@ public CBaseEntity_TraceAttack_Post(this, pevAttacker, Float:flDamage, Float:vec
 		}
 	}
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/

@@ -62,12 +62,11 @@ native zp_class_predator_get(id);
 new Float:DamageDealt[33]
 new Float:DamageReceived[33]
 
-new Float:DamageRequired
-new Float:DamageRequiredVIP
-new Float:DamageSelfRequired
-new Float:DamageRequiredPlyr[33]
-new Float:DamageRequiredVIPPlyr[33]
+new Float:DamageRequired[33]
+new Float:DamageSelfRequired[33]
 
+new bool:DamageRewardEnabled
+new bool:DamageSelfRewardEnabled
 new bool:InfectReward;
 new bool:RaceReward;
 new bool:ZombieReward;
@@ -111,6 +110,7 @@ public plugin_natives()
 {
 	register_native("zp_get_damage","native_get_damage",1)
 	register_native("zp_get_damage_required","native_get_damage_required",1)
+	register_native("zp_set_damage_required","native_set_damage_required",1)
 	register_native("zp_show_reward", "native_show_reward")
 }
 
@@ -121,13 +121,13 @@ public native_get_damage(id)
 
 public native_get_damage_required(id)
 {
-	if(!VIP[id])
-	{
-		return floatround(DamageRequiredPlyr[id]);
-	}
-
-	return floatround(DamageRequiredVIPPlyr[id]);
+	return floatround(DamageRequired[id]);
 }
+
+public native_set_damage_required(id, amount){
+	DamageRequired[id] = float(amount)
+}
+
 new Infection,Multi,Swarm,Plague,Nemesis,Dragon,Predator,Nightcrawler,Survivor,Knifer,Plasma,Race, Armageddon, MnF
 
 public plugin_cfg()
@@ -150,58 +150,169 @@ public plugin_cfg()
 
 public zp_fw_gamemodes_end()
 {
-	DamageRequired = 0.0
-	DamageRequiredVIP = 0.0
-	DamageSelfRequired = 0.0
+	DamageRewardEnabled=false;
+	DamageSelfRewardEnabled=false;
 	HumanReward=false;
 	ZombieReward=false;
 	RaceReward=false;
 	InfectReward=false;
 	arrayset(_:DamageDealt, _:0.0, sizeof(DamageDealt))
 	arrayset(_:DamageReceived, _:0.0, sizeof(DamageReceived))
+	arrayset(_:DamageRequired, _:0.0, sizeof(DamageRequired))
+	arrayset(_:DamageSelfRequired, _:0.0, sizeof(DamageSelfRequired))
 }
 
 public zp_fw_gamemodes_start(gm)
 {	
 	if(gm==Infection||gm==Multi)
 	{
-		DamageRequired = DAMAGE_NORMAL
-		DamageRequiredVIP = DAMAGE_NORMAL_VIP		
-		DamageSelfRequired = DAMAGE_SELF_NORMAL
+		DamageRewardEnabled=true;
+		DamageSelfRewardEnabled=true;
+		new Float:ap
+		for(new id=1;id<33;id++)
+		{			
+			if(!is_user_connected(id))
+				continue;
+				
+			ap = float(zp_ammopacks_get(id))
+			
+			if(ap<50000)
+			{
+				if(VIP[id])
+				{			
+					DamageRequired[id]= 100+(7*ap/250) //100-1500
+					DamageSelfRequired[id]=	250+(7*ap/200) //250-2000		
+				}				
+				else
+				{
+					DamageRequired[id]= 200+(9*ap/250) //200-2000
+					DamageSelfRequired[id]= 500+(ap/25) //500-2500
+				}
+				
+				DamageRequired[id]=100*float(floatround(DamageRequired[id]/100))
+				DamageSelfRequired[id]=100*float(floatround(DamageSelfRequired[id]/100))
+				
+			}
+			else
+			{
+				if(VIP[id])
+				{			
+					DamageRequired[id]= 1500.0
+					DamageSelfRequired[id]=	2000.0
+				}				
+				else
+				{
+					DamageRequired[id]= 2000.0
+					DamageSelfRequired[id]= 2500.0
+				}
+			}
+			
+		}
 		HumanReward=true;
 		InfectReward=true;
 	}
 	else if(gm==Swarm||gm==Plague)
-	{
-		DamageRequired = DAMAGE_ZBOSS
-		DamageRequiredVIP = DAMAGE_ZBOSS_VIP	
-		DamageSelfRequired = DAMAGE_SELF_SWARM
+	{	
+		DamageRewardEnabled=true;
+		DamageSelfRewardEnabled=true;		
+		for(new id=1;id<33;id++)
+		{			
+			if(!is_user_connected(id))
+				continue;
+				
+			DamageSelfRequired[id] = DAMAGE_SELF_SWARM
+			if(VIP[id])
+			{
+				DamageRequired[id] = DAMAGE_ZBOSS_VIP		
+			}				
+			else
+			{
+				DamageRequired[id] = DAMAGE_ZBOSS		
+			}
+			
+		}	
 		HumanReward=true;
 		ZombieReward=true;
 	}
 	else if(gm==Nemesis||gm==Dragon||gm==Nightcrawler||gm==Predator||gm==MnF)
 	{
-		DamageRequired = DAMAGE_ZBOSS
-		DamageRequiredVIP = DAMAGE_ZBOSS_VIP
+		DamageRewardEnabled=true;
+		for(new id=1;id<33;id++)
+		{			
+			if(!is_user_connected(id))
+				continue;
+				
+			if(VIP[id])
+			{
+				DamageRequired[id] = DAMAGE_ZBOSS_VIP		
+			}				
+			else
+			{
+				DamageRequired[id] = DAMAGE_ZBOSS		
+			}
+			
+		}	
 		HumanReward=true;
 	}
 	else if(gm==Armageddon)
 	{
-		DamageRequired = DAMAGE_ARMA
-		DamageRequiredVIP = DAMAGE_ARMA_VIP
+		DamageRewardEnabled=true;
+		for(new id=1;id<33;id++)
+		{			
+			if(!is_user_connected(id))
+				continue;
+				
+			if(VIP[id])
+			{
+				DamageRequired[id] = DAMAGE_ARMA_VIP		
+			}				
+			else
+			{
+				DamageRequired[id] = DAMAGE_ARMA		
+			}
+			
+		}
 		HumanReward=true;
 		ZombieReward=true;
 	}
 	else if(gm==Survivor)
 	{
-		DamageRequired = DAMAGE_SURVIVOR
-		DamageRequiredVIP = DAMAGE_SURVIVOR_VIP
+		DamageRewardEnabled=true;
+		for(new id=1;id<33;id++)
+		{			
+			if(!is_user_connected(id))
+				continue;
+				
+			if(VIP[id])
+			{
+				DamageRequired[id] = DAMAGE_SURVIVOR_VIP		
+			}				
+			else
+			{
+				DamageRequired[id] = DAMAGE_SURVIVOR		
+			}
+			
+		}
 		ZombieReward=true;
 	}
 	else if(gm==Knifer||gm==Plasma)
 	{
-		DamageRequired = DAMAGE_KNIFER_PLASMA
-		DamageRequiredVIP = DAMAGE_KNIFER_PLASMA_VIP
+		DamageRewardEnabled=true;
+		for(new id=1;id<33;id++)
+		{			
+			if(!is_user_connected(id))
+				continue;
+				
+			if(VIP[id])
+			{
+				DamageRequired[id] = DAMAGE_KNIFER_PLASMA_VIP		
+			}				
+			else
+			{
+				DamageRequired[id] = DAMAGE_KNIFER_PLASMA		
+			}
+			
+		}
 		ZombieReward=true;
 	}
 	else
@@ -209,9 +320,12 @@ public zp_fw_gamemodes_start(gm)
 	{
 		RaceReward=true;
 	}
-	if(XtraXP)
+	if(DamageRewardEnabled&&XtraXP)
 	{
-		DamageRequired = DamageRequiredVIP + 50
+		for(new id=1;id<33;id++)
+		{
+			DamageRequired[id]=DamageRequired[id]/2
+		}
 	}
 		
 }
@@ -230,6 +344,102 @@ public client_putinserver(id)
 	Boss[id]=false;
 	DamageDealt[id]=0.0
 	DamageReceived[id]=0.0
+	
+	new gm = zp_gamemodes_get_current()
+	if(gm==Infection||gm==Multi)
+	{
+		new Float:ap =  float(zp_ammopacks_get(id))
+			
+		if(ap<50000)
+		{
+			if(VIP[id])
+			{			
+				DamageRequired[id]= 100+(7*ap/250) //100-1500
+				DamageSelfRequired[id]=	250+(7*ap/200) //250-2000		
+			}				
+			else
+			{
+				DamageRequired[id]= 200+(9*ap/250) //200-2000
+				DamageSelfRequired[id]= 500+(ap/25) //500-2500
+			}
+			
+			DamageRequired[id]=100*float(floatround(DamageRequired[id]/100))
+			DamageSelfRequired[id]=100*float(floatround(DamageSelfRequired[id]/100))
+		}
+		else
+		{
+			if(VIP[id])
+			{			
+				DamageRequired[id]= 1500.0
+				DamageSelfRequired[id]=	2000.0	
+			}				
+			else
+			{
+				DamageRequired[id]= 2000.0
+				DamageSelfRequired[id]= 2500.0
+			}
+		}
+	}
+	else if(gm==Swarm||gm==Plague)
+	{					
+		DamageSelfRequired[id] = DAMAGE_SELF_SWARM
+		if(VIP[id])
+		{
+			DamageRequired[id] = DAMAGE_ZBOSS_VIP		
+		}				
+		else
+		{
+			DamageRequired[id] = DAMAGE_ZBOSS		
+		}
+	}
+	else if(gm==Nemesis||gm==Dragon||gm==Nightcrawler||gm==Predator||gm==MnF)
+	{
+		if(VIP[id])
+		{
+			DamageRequired[id] = DAMAGE_ZBOSS_VIP		
+		}				
+		else
+		{
+			DamageRequired[id] = DAMAGE_ZBOSS		
+		}
+	}
+	else if(gm==Armageddon)
+	{
+		if(VIP[id])
+		{
+			DamageRequired[id] = DAMAGE_ARMA_VIP		
+		}				
+		else
+		{
+			DamageRequired[id] = DAMAGE_ARMA		
+		}
+	}
+	else if(gm==Survivor)
+	{
+		if(VIP[id])
+		{
+			DamageRequired[id] = DAMAGE_SURVIVOR_VIP		
+		}				
+		else
+		{
+			DamageRequired[id] = DAMAGE_SURVIVOR		
+		}
+	}
+	else if(gm==Knifer||gm==Plasma)
+	{
+		if(VIP[id])
+		{
+			DamageRequired[id] = DAMAGE_KNIFER_PLASMA_VIP		
+		}				
+		else
+		{
+			DamageRequired[id] = DAMAGE_KNIFER_PLASMA		
+		}
+	}
+	if(DamageRewardEnabled&&XtraXP)
+	{
+		DamageRequired[id]=DamageRequired[id]/2
+	}
 }
 
 public zp_fw_core_infect_post(id, attacker)
@@ -276,64 +486,40 @@ public zp_fw_core_cure_post(id)
 		Boss[id]=false;
 	}
 }
-native has_golden_mp(attacker)
-native zp_has_ranger(attacker)
+//native has_golden_mp(attacker)
+///native zp_has_ranger(attacker)
 // Ham Take Damage Post Forward
 public fw_TakeDamage_Post(victim, inflictor, attacker, Float:damage, damage_type)
 {
 	// Non-player damage or self damage
 	if (victim == attacker || !is_user_alive(attacker))
 		return;
-	new Float:Afk = get_user_afktime(victim)
-	if(Zombie[victim]&&DamageSelfRequired&&!Zombie[attacker]&&Afk < 60.0)
+		
+	if(DamageSelfRewardEnabled&&(Zombie[victim]&&!Zombie[attacker]&&get_user_afktime(victim) < 60.0))
 	{
 		DamageReceived[victim] += damage
-		if(DamageReceived[victim] >= DamageSelfRequired)
+		if(DamageReceived[victim] >= DamageSelfRequired[victim])
 		{
 			static AP
-			AP = floatround(DamageReceived[victim] / DamageSelfRequired, floatround_floor)
+			AP = floatround(DamageReceived[victim] / DamageSelfRequired[victim], floatround_floor)
 			zp_ammopacks_set(victim, zp_ammopacks_get(victim) + AP)
 			show_reward(victim, AP, "[TRY]")
-			DamageReceived[victim]-=DamageSelfRequired * AP;
+			DamageReceived[victim]-=DamageSelfRequired[victim] * AP;
 		}
 	}
 
-	if((Zombie[attacker] &&ZombieReward && !Zombie[victim])||(!Zombie[attacker]&&HumanReward&&Zombie[victim]))
+	if(DamageRewardEnabled&&((Zombie[attacker] &&ZombieReward && !Zombie[victim])||(!Zombie[attacker]&&HumanReward&&Zombie[victim])))
 	{
-		if(DamageRequired)
-		{	
-			if(has_golden_mp(attacker) || zp_has_ranger(attacker))
-			{
-				DamageRequiredPlyr[attacker] = DamageRequired * 2.0
-				DamageRequiredVIPPlyr[attacker] = DamageRequired * 2.0
-			}
-			else
-			{
-				DamageRequiredPlyr[attacker] = DamageRequired
-				DamageRequiredVIPPlyr[attacker] = DamageRequiredVIP
-			}
-			// Store damage dealt
-			DamageDealt[attacker] += damage
-			if(!VIP[attacker])
-			{
-				if(DamageDealt[attacker] >= DamageRequiredPlyr[attacker])
-				{
-					static AP
-					AP = floatround(DamageDealt[attacker] / DamageRequiredPlyr[attacker], floatround_floor)
-					zp_ammopacks_set(attacker, zp_ammopacks_get(attacker) + AP)
-					show_reward(attacker, AP, "[DMG]")
-					DamageDealt[attacker]-=DamageRequiredPlyr[attacker] * AP;
-				}
-			}
-			else if(DamageDealt[attacker] >= DamageRequiredVIPPlyr[attacker])
-			{				
-				static AP
-				AP = floatround(DamageDealt[attacker] / DamageRequiredVIPPlyr[attacker], floatround_floor)
-				zp_ammopacks_set(attacker, zp_ammopacks_get(attacker) + AP)
-				show_reward(attacker, AP, "[DMG]")
-				DamageDealt[attacker]-= DamageRequiredVIPPlyr[attacker] * AP;
-			}
-		}		
+		// Store damage dealt
+		DamageDealt[attacker] += damage
+		if(DamageDealt[attacker] >= DamageRequired[attacker])
+		{
+			static AP
+			AP = floatround(DamageDealt[attacker] / DamageRequired[attacker], floatround_floor)
+			zp_ammopacks_set(attacker, zp_ammopacks_get(attacker) + AP)
+			show_reward(attacker, AP, "[DMG]")
+			DamageDealt[attacker]-=DamageRequired[attacker] * AP;
+		}	
 	}
 }
 
@@ -343,7 +529,6 @@ public fw_PlayerKilled_Post(victim, attacker, shouldgib)
 	// Non-player kill or self kill
 	if (victim == attacker || !is_user_connected(attacker))
 		return;
-	new Float:Afk = get_user_afktime(victim)	
 	if(Boss[attacker])
 	{		
 		if(!RaceReward)
@@ -412,10 +597,12 @@ public fw_PlayerKilled_Post(victim, attacker, shouldgib)
 			zp_ammopacks_set(attacker, zp_ammopacks_get(attacker) + REWARD_KILL_VIP)
 			show_reward(attacker, REWARD_KILL_VIP,"[KILL]")
 		}
+		
+		if(get_user_afktime(victim) > 60.0)
+			return
+			
 		if(!VIP[victim])
 		{
-			if(Afk > 60.0)
-				return
 			if(XtraXP)
 			{
 				zp_ammopacks_set(victim, zp_ammopacks_get(victim) + REWARD_XAP_DEATH)
@@ -429,8 +616,6 @@ public fw_PlayerKilled_Post(victim, attacker, shouldgib)
 		}
 		else
 		{
-			if(Afk > 60.0)
-				return
 			zp_ammopacks_set(victim, zp_ammopacks_get(victim) + REWARD_DEATH_VIP)
 			show_reward(victim, REWARD_DEATH_VIP,"[DEATH]")
 		}
@@ -484,3 +669,6 @@ public show_reward(id, amount, const reason[])
 
 	show_dhudmessage(id, "%s+%d AmmoPack%s %s",temp,amount,amount>1?"s":"",reason)
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
