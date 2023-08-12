@@ -135,13 +135,13 @@ public fwHamPlayerSpawnPost(id)
 
 public plugin_precache()
 {
-	precache_generic(AK_V_MODEL)
-	precache_generic(AK_V_MODEL_B)
-	precache_generic(AK_V_MODEL_G)
-	precache_generic(AK_V_MODEL_GG)	
-	precache_generic(AK_P_MODEL)
-	precache_generic(AK_W_MODEL)
-	m_spriteTexture = precache_generic("sprites/dot.spr")
+	precache_model(AK_V_MODEL)
+	precache_model(AK_V_MODEL_B)
+	precache_model(AK_V_MODEL_G)
+	precache_model(AK_V_MODEL_GG)	
+	precache_model(AK_P_MODEL)
+	precache_model(AK_W_MODEL)
+	m_spriteTexture = precache_model("sprites/dot.spr")
 	precache_sound("weapons/zoom.wav")
 }
 
