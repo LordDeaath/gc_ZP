@@ -355,7 +355,14 @@ public plugin_cfg()
 	g_tAP = TrieCreate()
 	ReadFile2()
 }
-
+public Do2Xp()
+	XtraXP = true
+public Is2Xp()
+{
+	if(XtraXP)
+		return 1
+	return 0
+}
 public plugin_end()
 {
 	ArrayDestroy(g_aLevels)
@@ -1080,7 +1087,7 @@ public OnRoundStart()
 }
 public Event_NewRound()
 {
-	if( IsVipHour( get_pcvar_num( g_iCvars[ 1 ] ), get_pcvar_num( g_iCvars[ 2 ] ) ) )
+	if( IsVipHour( get_pcvar_num( g_iCvars[ 1 ] ), get_pcvar_num( g_iCvars[ 2 ] ) ) || XtraXP == true )
 	{
 		XtraXP = true;
 		zp_colored_print(0, "^3 Happy Hour ^4On^3! ^4XP^3 is doubled^1!")
@@ -1772,6 +1779,9 @@ public plugin_natives()
 	register_native("crxranks_set_user_xp",             "_crxranks_set_user_xp")
 	register_native("crxranks_using_comb_events",       "_crxranks_using_comb_events")
 	register_native("crxranks_xp_reward_is_set",        "_crxranks_xp_reward_is_set")
+	register_native("EnableExtraXP","Do2Xp",1)
+	register_native("IsExtraXP","Is2Xp",1)
+	register_native("AddXp","_crxranks_add_xp")
 }
 
 public _crxranks_get_chat_prefix(iPlugin, iParams)
@@ -1853,6 +1863,10 @@ public _crxranks_get_user_rank(iPlugin, iParams)
 public _crxranks_get_user_xp(iPlugin, iParams)
 {
 	return g_ePlayerData[get_param(1)][XP]
+}
+public _crxranks_add_xp(iPlugin, iParams)
+{
+	g_ePlayerData[get_param(1)][XP] += get_param(2)
 }
 
 public _crxranks_get_vault_name(iPlugin, iParams)

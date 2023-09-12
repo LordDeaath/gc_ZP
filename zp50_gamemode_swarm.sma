@@ -17,6 +17,8 @@
 #include <zp50_deathmatch>
 #include <zp50_items>
 #include <zp50_random_spawn>
+#include <fun>
+#include <hamsandwich>
 
 // Settings file
 new const ZP_SETTINGS_FILE[] = "zombieplague.ini"
@@ -37,10 +39,10 @@ new Array:g_sound_swarm
 
 new g_MaxPlayers
 new g_HudSync
-
-new cvar_swarm_chance, cvar_swarm_min_players, cvar_multi_ratio,Trm
+new bool:Zombie[33], iMax[33]
+new cvar_swarm_chance, cvar_swarm_min_players, cvar_multi_ratio,cvar_hp_ratio, Trm
 new cvar_swarm_show_hud, cvar_swarm_sounds, cvar_multi_min_zombies
-new cvar_swarm_allow_respawn
+new cvar_swarm_allow_respawn, nSpawns
 
 public plugin_end()
 {
@@ -65,10 +67,10 @@ public plugin_precache()
 	cvar_swarm_allow_respawn = register_cvar("zp_swarm_allow_respawn", "0")
 	cvar_multi_ratio = register_cvar("zp_trm_ratio", "0.15")
 	cvar_multi_min_zombies = register_cvar("zp_multi_min_zombies", "2")
-	
+	cvar_hp_ratio = register_cvar("zp_hp_ratio", "0.30")
 	// Initialize arrays
 	g_sound_swarm = ArrayCreate(SOUND_MAX_LENGTH, 1)
-	
+	RegisterHam(Ham_Killed,"player","fw_kill",1)
 	// Load from external file
 	amx_load_setting_string_arr(ZP_SETTINGS_FILE, "Sounds", "ROUND SWARM", g_sound_swarm)
 	
@@ -134,15 +136,45 @@ public zp_fw_gamemodes_choose_pre(game_mode_id, skipchecks)
 }
 public zp_fw_items_select_pre(id, itm, c)
 {
-	new zpMad = zp_items_get_id("Zombie Madness")
-	new zpBlind = zp_items_get_id("Unlimited Clip")
 	if(!Trm)
 		return ZP_ITEM_AVAILABLE
-	if(itm == zpMad || itm == zpBlind)
-		return ZP_ITEM_NOT_AVAILABLE
 		
-	return ZP_ITEM_AVAILABLE
-	
+	return ZP_ITEM_NOT_AVAILABLE
+}
+public zp_fw_core_infect_post(id)
+	set_task(1.0,"FixHP",id)
+public zp_fw_core_infect_pre(id, att)
+{
+	if(att != id)
+		zp_random_spawn_do(id,false)
+}
+public FixHP(id)
+{
+	if(!is_user_alive(id))
+		return
+	if(!Trm)
+		return
+	if(!zp_core_is_zombie(id))
+		return
+	new Float:Health = float(get_user_health(id)) * get_pcvar_float(cvar_hp_ratio)
+	new iHealth = floatround(Health)
+	set_user_health(id, iHealth)
+	iMax[id] = iHealth
+	Zombie[id] = true
+}
+public client_PreThink(id)
+{
+	if(!is_user_alive(id))
+		return
+	if(!Trm)
+		return
+	if(!zp_core_is_zombie(id))
+		return
+	if(!Zombie[id])
+		return
+	new iHealth = get_user_health(id)
+	if(iHealth > iMax[id])
+		set_user_health(id, iMax[id])
 }
 public ItmBuy(id)
 {
@@ -152,11 +184,44 @@ public ItmBuy(id)
 	zp_items_force_buy(id, itmLM,true)
 }
 public zp_fw_gamemodes_end(mod)
+{
 	Trm = 0
+	server_cmd("zp_painshockfree_zombie 0")
+	server_cmd("zp_knockback_obey_class 1")
+	server_cmd("zp_knockback_power 1")
+	server_cmd("zp_knockback_ducking 0.25")
+}
+public fw_kill(id)
+{
+	if(!Trm)
+		return
+	if(!Zombie[id])
+		return
+		
+	if(nSpawns <= 0)
+	{
+		Trm = 0
+		server_cmd("endround")
+		server_cmd("zp_painshockfree_zombie 0")
+		server_cmd("zp_knockback_obey_class 1")
+		server_cmd("zp_knockback_power 1")
+		server_cmd("zp_knockback_ducking 0.25")
+		set_hudmessage(HUD_EVENT_R, HUD_EVENT_G, HUD_EVENT_B, HUD_EVENT_X, HUD_EVENT_Y, 1, 0.0, 5.0, 1.0, 1.0, -1)
+		ShowSyncHudMsg(0, g_HudSync, "Zombies ran out of respawns", nSpawns)	
+	}
+	else
+	{
+		nSpawns--
+		set_hudmessage(HUD_EVENT_R, HUD_EVENT_G, HUD_EVENT_B, HUD_EVENT_X, HUD_EVENT_Y, 1, 0.0, 5.0, 1.0, 1.0, -1)
+		ShowSyncHudMsg(0, g_HudSync, "Zombies have %d respawns left", nSpawns)		
+	}
+	Zombie[id] = false
+}
 public zp_fw_gamemodes_start()
 {
-	zp_gamemodes_set_allow_infect()	
+	//zp_gamemodes_set_allow_infect()	
 	// Turn every Terrorist into a zombie
+	nSpawns = 0
 	new iZombies, id, alive_count = GetAliveCount()
 	new iMaxZombies = floatround(alive_count * get_pcvar_float(cvar_multi_ratio), floatround_ceil)
 	iZombies = 0
@@ -184,7 +249,9 @@ public zp_fw_gamemodes_start()
 		
 		// Switch to CT
 		cs_set_player_team(id, CS_TEAM_CT)
-		ItmBuy(id)
+		Zombie[id] = false
+		nSpawns += 3
+		//ItmBuy(id)
 	}
 	Trm = 1
 	// Play swarm sound
@@ -201,6 +268,10 @@ public zp_fw_gamemodes_start()
 		set_hudmessage(HUD_EVENT_R, HUD_EVENT_G, HUD_EVENT_B, HUD_EVENT_X, HUD_EVENT_Y, 1, 0.0, 5.0, 1.0, 1.0, -1)
 		ShowSyncHudMsg(0, g_HudSync, "Terminal Infection")
 	}
+	server_cmd("zp_painshockfree_zombie 1")
+	server_cmd("zp_knockback_obey_class 0")
+	server_cmd("zp_knockback_power 0")
+	server_cmd("zp_knockback_ducking 0.0")
 }
 
 // Plays a sound on clients

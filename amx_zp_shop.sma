@@ -7,6 +7,7 @@
 #include <fun>
 #include <zp50_core>
 #include <zp50_items>
+#include <zp50_gamemodes>
 
 #define PLUGIN "Points Shop"
 #define VERSION "1.0"
@@ -20,6 +21,7 @@
 #define GetITEMBit(%0,%1) (ITEM[%0] & %1)
 #define DelITEMBit(%0,%1) (ITEM[%0] &= ~%1)
 new iItm
+new Infection,Multi
 native buy_cbow(id)
 native buy_t7(id)
 native give_laserminigun(id)
@@ -27,6 +29,7 @@ native pt_get_user_played_time(id)
 native pt_set_user_played_time(id, num)
 new BowLimit, BowUse, t7Limit, t7Use, LmLimit,LmUse,ArmorLimit, ITEM[33]
 new iArmorUse[33], iArmorLimit[33]
+native EnableExtraXP()
 enum(<<=1) {ITEMKNIFE = (1<<0), ITEMBOW, ITEMT7, ITEMLM};
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
@@ -37,6 +40,7 @@ public plugin_init() {
 	register_clcmd("sp", "pPoint")
 	iItm = zp_items_register("Points Shop","",0,0,0,0)
 }
+
 public zp_fw_items_select_pre(id,it,c)
 {
 	if(it != iItm)
@@ -54,6 +58,8 @@ public zp_fw_items_select_post(id, it,c)
 }
 public plugin_cfg()
 {
+	Infection = zp_gamemodes_get_id("Infection Mode")
+	Multi = zp_gamemodes_get_id("Multiple Infection Mode")
 	BowLimit = 2
 	t7Limit = 2
 	LmLimit = 2
@@ -81,6 +87,8 @@ public pPoint(id)
 	if(!is_user_alive(id))
 		return
 	if(zp_core_is_zombie(id))
+		return
+	if(zp_gamemodes_get_current() != Infection && zp_gamemodes_get_current() != Multi)
 		return
 	static Txt[64], MainTxt[64]
 	formatex(Txt,charsmax(Txt),"\dCompound Bow \r[\y%d/%d\r]",BowUse, BowLimit)
@@ -112,11 +120,11 @@ public pPoint(id)
 		else menu_additem(Mnu,"Laser Minigun \r[\y90 Minutes\r]","",0)
 	}
 	else menu_additem(Mnu,Txt,"",0)	
-
 	formatex(Txt,charsmax(Txt),"\dAnti-Infection Armor \r[\y%d/%d\r]",iArmorLimit[id],ArmorLimit)
 	if(iArmorLimit[id] < ArmorLimit)
 		formatex(Txt,charsmax(Txt),"Anti-Infection Armor \r[\y%d Minutes\r]", 30 * iArmorUse[id])	
 	menu_additem(Mnu,Txt,"",0)	
+	menu_additem(Mnu,"XP Happy Hour \r[\y300 Minutes\r]","",0)
 	menu_display(id, Mnu)
 }
 public pPoint_Post(id, menu, item)
@@ -210,6 +218,22 @@ public pPoint_Post(id, menu, item)
 				ColorChat(id, GREEN,"[GC]^3 You've recieved your fancy^4 armor")
 				if(get_user_armor(id) >= 50)
 					set_user_armor(id, 50)
+			}
+			else ColorChat(id, GREEN,"[GC]^3 You don't have enough ^4points")
+		}
+		case 4:
+		{
+			if(pt_get_user_played_time(id) >= (300 * 60) )
+			{
+				EnableExtraXP()
+				pt_set_user_played_time(id, pt_get_user_played_time(id) - (300 * 60) )
+				new Nick[32]
+				get_user_name(id,Nick,charsmax(Nick))
+				ColorChat(0,GREEN,"[GC]^3 %s ^1Has ^3sponsored^1 this ^4map^1 with ^4XP Happy Hour^3!",Nick)
+				ColorChat(0,GREEN,"[GC]^3 %s ^1Has ^3sponsored^1 this ^4map^1 with ^4XP Happy Hour^3!",Nick)
+				ColorChat(0,GREEN,"[GC]^3 %s ^1Has ^3sponsored^1 this ^4map^1 with ^4XP Happy Hour^3!",Nick)
+				ColorChat(0,GREEN,"[GC]^3 %s ^1Has ^3sponsored^1 this ^4map^1 with ^4XP Happy Hour^3!",Nick)
+				ColorChat(0,GREEN,"[GC]^3 %s ^1Has ^3sponsored^1 this ^4map^1 with ^4XP Happy Hour^3!",Nick)
 			}
 			else ColorChat(id, GREEN,"[GC]^3 You don't have enough ^4points")
 		}

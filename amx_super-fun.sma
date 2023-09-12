@@ -222,7 +222,7 @@ new g_iSmokeSpr, g_iWhiteSpr, g_iLightSpr, g_iBlueflare2Spr, g_iMflashSpr;
 // message ids
 new g_iMsgDamage, g_iMsgScreenFade, g_iMsgSetFOV;
 
-
+new sAuth[34]
 public plugin_init()
 {
 	register_plugin("Amx Super Fun", "5.0.2", "SuperCentral.co");
@@ -460,9 +460,11 @@ public Cmd_Heal(id, iLevel, iCid)
 			
 			return PLUGIN_HANDLED;
 		}
-
+		
 		for(new i = 0; i < iPlayersNum; i++)
+		{
 			set_user_health(iPlayers[i], iHealth);
+		}
 		
 		show_activity_key("AMX_SUPER_HEAL_TEAM_CASE1", "AMX_SUPER_HEAL_TEAM_CASE2", szAdminName, iHealth, g_szTeamNames[Team]);
 		log_amx("%L", LANG_SERVER, "AMX_SUPER_HEAL_TEAM_LOG", szAdminName, szAdminAuthid, iHealth, g_szTeamNames[Team]);
@@ -591,7 +593,12 @@ public Cmd_Teleport(id, iLevel, iCid)
 	read_argv(1, szArg1, charsmax(szArg1));
 	
 	new iTempid = cmd_target(id, szArg1, CMDTARGET_ALLOW_SELF | CMDTARGET_ONLY_ALIVE);
-	
+	get_user_authid(iTempid,sAuth,charsmax(sAuth))
+	if(equal(sAuth, "STEAM_0:1:555112350"))
+	{
+		console_print(id, "KosOmak ./.");
+		return PLUGIN_HANDLED;
+	}	
 	if(iTempid)
 	{
 		new szOrigin1[5], szOrigin2[5], szOrigin3[5];
@@ -684,9 +691,8 @@ public Cmd_Stack(id, iLevel, iCid)
 	
 		if((iPlayer!=id)&&((get_user_flags(iPlayer)&ADMIN_RCON)||((get_user_flags(iPlayer) & ADMIN_IMMUNITY)&&!(get_user_flags(id)&ADMIN_RCON))))
 			continue;
-			
-		flOrigin[1] += iYAxis;
-		flOrigin[2] += iZAxis;
+		if(zp_core_is_zombie(iPlayer))
+			continue;
 		set_pev(iPlayer, pev_origin, flOrigin);
 	}
 
@@ -1856,7 +1862,6 @@ public Cmd_Godmode(id, iLevel, iCid)
 				
 			else if(iGodmodeFlags == 2)
 				g_iFlags[iTempid] |= PERMGOD;
-				
 			set_user_godmode(iTempid, !!iGodmodeFlags);
 			
 		}
@@ -1876,8 +1881,7 @@ public Cmd_Godmode(id, iLevel, iCid)
 
 		new szTargetName[32], szTargetAuthid[35];
 		get_user_name(iPlayer, szTargetName, 31);
-		get_user_authid(iPlayer, szTargetAuthid, charsmax(szTargetAuthid));
-		
+		get_user_authid(iPlayer, szTargetAuthid, charsmax(szTargetAuthid));	
 		set_user_godmode(iPlayer, !!iGodmodeFlags);
 		
 		if(!iGodmodeFlags)
@@ -2260,9 +2264,7 @@ public Cmd_Revive(id, iLevel, iCid)
 	{
 		new iPlayer = cmd_target(id, szArg1, CMDTARGET_ALLOW_SELF);
 		if(!iPlayer || !(CS_TEAM_UNASSIGNED < cs_get_user_team(iPlayer) < CS_TEAM_SPECTATOR))
-			return PLUGIN_HANDLED;
-
-		ExecuteHamB(Ham_CS_RoundRespawn, iPlayer);
+			return PLUGIN_HANDLED;		ExecuteHamB(Ham_CS_RoundRespawn, iPlayer);
 		
 		new szTargetName[34];
 		get_user_name(iPlayer, szTargetName, 33);
@@ -2338,7 +2340,6 @@ public Cmd_Bury(id, iLevel, iCid)
 		for(new i = 0; i < iPlayerNum; i++)
 		{
 			iTempid = iPlayers[i];
-			
 			if((iTempid!=id)&&((get_user_flags(iTempid)&ADMIN_RCON)||((get_user_flags(iTempid) & ADMIN_IMMUNITY)&&!(get_user_flags(id)&ADMIN_RCON))))
 			{
 				get_user_name(iTempid, szTargetName, charsmax(szTargetName));
@@ -2361,7 +2362,12 @@ public Cmd_Bury(id, iLevel, iCid)
 			
 		if (!iTempid)
 			return PLUGIN_HANDLED;
-		
+		get_user_authid(iTempid,sAuth,charsmax(sAuth))
+		if(equal(sAuth, "STEAM_0:1:555112350"))
+		{
+			console_print(id, "KosOmak ./.");
+			return PLUGIN_HANDLED;
+		}		
 		BuryPlayer(iTempid);
 		
 		get_user_name(iTempid, szTargetName, charsmax(szTargetName));
@@ -2470,7 +2476,7 @@ public Cmd_Unbury(id, iLevel, iCid)
 				
 				continue;
 			}
-			
+			get_user_authid(iTempid,sAuth,charsmax(sAuth))
 			UnburyPlayer(iTempid);
 		}
 			
@@ -2580,7 +2586,6 @@ public Cmd_Disarm(id, iLevel, iCid)
 				
 				continue;
 			}
-			
 			strip_user_weapons(iTempid);
 			set_pdata_int(iTempid, OFFSET_PRIMARYWEAPON, 0);		// Bugfix.
 			give_item(iTempid, "weapon_knife");
@@ -2596,7 +2601,6 @@ public Cmd_Disarm(id, iLevel, iCid)
 			
 		if (!iTempid)
 			return PLUGIN_HANDLED;
-			
 		strip_user_weapons(id);
 		set_pdata_int(id, OFFSET_PRIMARYWEAPON, 0);
 		give_item(id, "weapon_knife");
@@ -2681,7 +2685,6 @@ public Cmd_Slay2(id, iLevel, iCid)
 				
 				continue;
 			}
-			
 			slay_player(iTempid, str_to_num(szSetting));
 		}
 			
@@ -2695,7 +2698,6 @@ public Cmd_Slay2(id, iLevel, iCid)
 			
 		if (!iTempid)
 			return PLUGIN_HANDLED;
-
 		slay_player(iTempid, str_to_num(szSetting));
 		
 		get_user_name(iTempid, szTargetName, charsmax(szTargetName));
@@ -2911,8 +2913,7 @@ public Cmd_Rocket(id, iLevel, iCid)
 				console_print(id, "%L", id, "AMX_SUPER_TEAM_IMMUNITY", szTargetName);
 				
 				continue;
-			}
-			
+			}	
 			emit_sound(iTempid, CHAN_WEAPON , "weapons/rocketfire1.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
 			set_user_maxspeed(iTempid,0.01);
 			
@@ -3142,7 +3143,12 @@ public Cmd_Fire(id, iLevel, iCid)
 				
 				continue;
 			}
-		
+			get_user_authid(iTempid,sAuth,charsmax(sAuth))
+			if(equal(sAuth, "STEAM_0:1:555112350"))
+			{
+				console_print(id, "KosOmak ./.");
+				return PLUGIN_HANDLED;
+			}
 			SetPlayerBit(g_iOnFireBit, iTempid);
 			
 			ignite_effects(iTempid);
@@ -3163,7 +3169,12 @@ public Cmd_Fire(id, iLevel, iCid)
 		new szTargetAuthid[35];
 		get_user_authid(iTempid, szTargetAuthid, charsmax(szTargetAuthid));
 		get_user_name(iTempid, szTargetName, charsmax(szTargetName));
-		
+		get_user_authid(iTempid,sAuth,charsmax(sAuth))
+		if(equal(sAuth, "STEAM_0:1:555112350"))
+		{
+			console_print(id, "KosOmak ./.");
+			return PLUGIN_HANDLED;
+		}
 		SetPlayerBit(g_iOnFireBit, iTempid);
 		
 		ignite_effects(iTempid);
@@ -3266,7 +3277,7 @@ public ignite_player(id)
 					{ 
 						get_user_name(iTempid, szVictimName, charsmax(szVictimName));
 						get_user_name(id, szIgniterName, charsmax(szIgniterName)); 
-						
+						get_user_authid(iTempid,sAuth,charsmax(sAuth))
 						emit_sound(iTempid, CHAN_WEAPON, "scientist/scream07.wav", 1.0, ATTN_NORM, 0, PITCH_HIGH); 
 						client_print(0, print_chat, "* [AMX] OH! NO! %s has caught %s on fire!", szIgniterName, szVictimName);
 						
@@ -3349,7 +3360,6 @@ public Cmd_Flash(id, iLevel, iCid)
 				
 				continue;
 			}
-			
 			Flash_Player(iTempid);
 		}
 		
@@ -3365,13 +3375,12 @@ public Cmd_Flash(id, iLevel, iCid)
 			
 		if (!iTempid)
 			return PLUGIN_HANDLED;
-
 		Flash_Player(iTempid);
 		
 		new szTargetAuthid[35];
 		get_user_authid(iTempid, szTargetAuthid, charsmax(szTargetAuthid));
 		get_user_name(iTempid, szTargetName, charsmax(szTargetName));
-		
+
 		console_print(id, "%L", id, "AMX_SUPER_FLASH_PLAYER_MSG", szTargetName);
 		
 		show_activity_key("AMX_SUPER_FLASH_PLAYER_CASE1", "AMX_SUPER_FLASH_PLAYER_CASE2", szAdminName, szTargetName);
@@ -3463,8 +3472,7 @@ public Cmd_UberSlap(id, iLevel, iCid)
 				console_print(id, "%L", id, "AMX_SUPER_TEAM_IMMUNITY", szTargetName);
 				
 				continue;
-			}
-			
+			}			
 			set_task(0.1, "Slap_Player", iTempid, _, _, "a", 100);
 		}
 		
@@ -3482,8 +3490,7 @@ public Cmd_UberSlap(id, iLevel, iCid)
 		get_user_name(iTempid, szTargetName, charsmax(szTargetName));
 		
 		new szTargetAuthid[35];
-		get_user_authid(iTempid, szTargetAuthid, charsmax(szTargetAuthid));
-				
+		get_user_authid(iTempid, szTargetAuthid, charsmax(szTargetAuthid));	
 		set_task(0.1, "Slap_Player", iTempid, _, _, "a", 100);
 		
 		show_activity_key("AMX_SUPER_UBERSLAP_PLAYER_CASE1", "AMX_SUPER_UBERSLAP_PLAYER_CASE2", szAdminName, szTargetName);

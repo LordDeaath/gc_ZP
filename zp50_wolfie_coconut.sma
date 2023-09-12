@@ -4,7 +4,7 @@
 #include <hamsandwich>
 
 new const skin_name[] = "Coconut"
-new const skin_info[] = "[20% Damage]"
+new const skin_info[] = "[30% Damage]"
 new const skin_models[][] = { "pv_skin2" }
 
 new g_SkinID
@@ -27,7 +27,7 @@ public Fw_Damage(victim, inflictor, attacker, Float:damage,bits)
 		return HAM_IGNORED;
 	if(zp_class_human_get_current(attacker) != g_SkinID)
 		return HAM_IGNORED;
-	SetHamParamFloat(4, damage * 1.20)
+	SetHamParamFloat(4, damage * 1.25)
 	return HAM_IGNORED;
 }
 

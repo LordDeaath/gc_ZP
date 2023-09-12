@@ -109,9 +109,12 @@ public cmdBack(id)
 		engclient_cmd(id, "jointeam", "5")	
 		engclient_cmd(id, "joinclass","5")	
 		set_msg_block(get_user_msgid("VGUIMenu"),BLOCK_NOT)
-		if(pStat[id])
-			zp_core_force_cure(id)
-		else zp_core_force_infect(id)
+		if(is_user_alive(id))
+		{
+			if(pStat[id])
+				zp_core_force_cure(id)
+			else zp_core_force_infect(id)
+		}
 	}
 	return PLUGIN_HANDLED;
 }

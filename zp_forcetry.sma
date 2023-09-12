@@ -2,12 +2,14 @@
 
 #include <amxmodx>
 #include <amxmisc>
+#include <cstrike>
 #include <colorchat>
 #include <zp50_gamemodes>
 #include <fun>
 #include <hamsandwich>
 #include <fakemeta>
 #include <engine>
+#include <user_afk_status>
 
 #define PLUGIN "Force Try"
 #define VERSION "1.0"
@@ -24,7 +26,7 @@
 new iAdminOrigin[33][3];
 new Float:iAdminAngle[33][3];
 
-new Float:LastDeath[33];
+new Float:LastDeath[33], Float:pAfk[33];
 new Float:LastInfect[33];
 new Deaths[33], Infects[33];
 // Hack to be able to use Ham_Player_ResetMaxSpeed (by joaquimandrade)
@@ -259,7 +261,7 @@ public ForceTry(id, arg[])
 		ColorChat(id,GREEN,"[GC]^3 Dead Player!");
 		return PLUGIN_HANDLED
 	}
-	if(!(zp_core_is_zombie(player)))
+	if(!zp_core_is_zombie(player) && cs_get_user_team(player) != CS_TEAM_T)
 	{
 		client_print(id,print_console,"Player is not a zombie!");
 		ColorChat(id,GREEN,"[GC]^3 Player is not a^4 Zombie!");
@@ -278,8 +280,8 @@ public ForceTry(id, arg[])
 	new param[2];
 	param[0]=id;
 	param[1]=player;
+	pAfk[player] = get_user_afktime(player)
 	set_task(1.0,"Teleport",0,param,sizeof(param));
-	
 	return PLUGIN_HANDLED;
 }
 public Teleport(param[])
@@ -295,7 +297,7 @@ public Teleport(param[])
 	{
 		return
 	}
-	if(!(zp_core_is_zombie(player)))
+	if(!zp_core_is_zombie(player) && cs_get_user_team(player) != CS_TEAM_T)
 	{
 		return
 	}
@@ -365,9 +367,9 @@ public Task_Unfreeze(id)
 		if(!frozen && g_PreThinkId)
 		{
 			unregister_forward(FM_PlayerPreThink, g_PreThinkId);
-			
 			g_PreThinkId = 0;
 		}
+		set_user_afktime(id, pAfk[id])			
 	}
 }
 

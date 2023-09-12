@@ -14,7 +14,10 @@
 #define AUTHOR "Lord. Death."
 
 native crxranks_get_user_level(id)
-
+native zp_class_survivor_get(id);
+native zp_class_sniper_get(id);
+native zp_class_knifer_get(id);
+native zp_class_plasma_get(id);
 new iItems[7]
 
 new ItemNames[7][]=
@@ -41,7 +44,8 @@ public zp_fw_core_cure_post(id, at)
 {
 	new lvl = crxranks_get_user_level(id)
 	new ap = zp_ammopacks_get(id)
-
+	if(zp_class_survivor_get(id) || zp_class_sniper_get(id) || zp_class_knifer_get(id) || zp_class_plasma_get(id))
+		return
 	if(lvl <= 10)
 	{
 		if(ap <= 2500 && lvl <= 10)
@@ -71,6 +75,8 @@ public BuyIt()
 		if(zp_core_is_zombie(id))
 			continue
 		if(crxranks_get_user_level(id) > 15)
+			continue
+		if(zp_class_survivor_get(id) || zp_class_sniper_get(id) || zp_class_knifer_get(id) || zp_class_plasma_get(id))
 			continue
 		if(zp_ammopacks_get(id) <= 2500 && crxranks_get_user_level(id) <= 8)
 		{

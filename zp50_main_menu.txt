@@ -41,7 +41,7 @@ native zp_vip_model_toggle(id)
 native zp_vip_model_get(id)
 native zp_vip_glow_toggle(id)
 native zp_vip_glow_get(id)
-
+native set_tag_status_on(id)
 #define TASK_WELCOMEMSG 100
 
 // CS Player PData Offsets (win32)
@@ -64,7 +64,18 @@ new cvar_buy_custom_primary, cvar_buy_custom_secondary, cvar_buy_custom_grenades
 //native open_clan_menu(index);
 //native zp_skin_shop_show(index);
 //new g_NormalID, g_MultiInfectionID, g_AlienID, g_RaceID;
-
+new iBeacon[33],Float:iLast[33], sprite_white
+new r=15,g,b
+new Tags[7][] =
+{
+	"[VIP]",
+	"[YouTuber]",
+	"[Mapper]",
+	"[PepeLaugh]",
+	"[Pog]",
+	"[5 IQ]",
+	"Custom"
+}
 public plugin_init()
 {
 	register_plugin("[ZP] Main Menu", ZP_VERSION_STRING, "ZP Dev Team")
@@ -75,7 +86,9 @@ public plugin_init()
 	
 	register_clcmd("say /zpmenu", "clcmd_zpmenu",0,"- Opens ZP Main Menu")
 	register_clcmd("say zpmenu", "clcmd_zpmenu",0,"- Opens ZP Main Menu")
-	
+	register_clcmd("say /zbc", "BSwitc")
+	register_clcmd("say /vips", "PrintFr")
+	set_task(1.0,"TaskBeaconColor",0,"",0,"b")
 	// Menus
 	register_menu("Main Menu", KEYSMENU, "menu_main")	
 	register_menu("Human Menu", KEYSMENU, "menu_human")
@@ -88,6 +101,7 @@ public plugin_precache()
 	{
 		precache_sound(music[i])
 	}
+	sprite_white = precache_model("sprites/white.spr");
 }
 public plugin_natives()
 {
@@ -134,7 +148,39 @@ public task_welcome_msg()
 	ColorChat(0,GREEN, "^04 Welcome 2 The Dark Side! ^01", ZP_VERSION_STR_LONG)
 	ColorChat(0,TEAM_COLOR, "Add Our IP: ^04 [ 74.91.116.201:27015 ] ^01 to comeback easly.")
 }*/
+public PrintFr(user)
+{
+	new adminnames[33][32]
+	new message[192]
+	new id, count, x, len
+	
+	for(id = 1 ; id <= 32 ; id++)
+		if(is_user_connected(id))
+			if(zv_get_user_flags(id) & ZV_MULTI)
+				get_user_name(id, adminnames[count++], 31)
 
+	len = format(message, 255, "Mini VIPs^1: ")
+	if(count > 0)
+	{
+		for(x = 0 ; x < count ; x++)
+		{
+			if(x > 12)
+				continue
+			len += format(message[len], 255-len, "^3%s%s ", adminnames[x], x < (count-1) ? "^1, ":"")
+			if(len > 96 )
+			{
+				ColorChat(user,GREEN, "%s", message)
+				len = format(message, 255, "")
+			}
+		}
+		ColorChat(user,GREEN, "%s", message)
+	}
+	else 
+	{
+		len += format(message[len], 255-len, "nobody")
+		ColorChat(user,GREEN, "%s", message)
+	}
+}
 public clcmd_chooseteam(id)
 {
 	//if (flag_get(g_ChooseTeamOverrideActive, id))
@@ -151,12 +197,63 @@ public clcmd_zpmenu(id)
 {
 	show_menu_main(id)
 }
-/*
-public client_putinserver(id)
+public TaskBeaconColor()
 {
-	flag_set(g_ChooseTeamOverrideActive, id)
-}*/
+	if(r==15)
+		if(g==15) r--;
+		else if(b>0) b--;
+		else g++;
+	else if(g==15)
+		if(r>0) r--;
+		else if(b<15) b++;
+		else g--;
+	else if(b==15)
+		if(g>0) g--;
+		else r++;
+}
+public client_PreThink(id)
+{
+	if(!is_user_alive(id))
+		return
+	if(!iBeacon[id])
+		return
+	new Float:CurrTime = get_gametime()
+	if(CurrTime - iLast[id] <= 2.00)
+		return
+	new iOr[3]
 
+	get_user_origin(id,iOr,0)
+	message_begin( MSG_BROADCAST, SVC_TEMPENTITY, iOr );
+	write_byte( TE_BEAMCYLINDER );
+	write_coord( iOr[0] );
+	write_coord( iOr[1] );
+	write_coord( iOr[2] - 15 );
+	write_coord( iOr[0] );
+	write_coord( iOr[1] + 192 );
+	write_coord( iOr[2] + 192 );
+	write_short( sprite_white );
+	write_byte( 0 ); // startframe
+	write_byte( 0 ); // framerate
+	write_byte( 12 ); // life
+	write_byte( 10 ); // width
+	write_byte( 255 ); // noise
+	if(zv_get_user_flags(id) & ZV_MULTI)
+	{
+		write_byte( 255 ); // r, g, b
+		write_byte( 255 );// r, g, b
+		write_byte( 255 ); // r, g, b
+	}
+	else
+	{
+		write_byte( r * 15); // r, g, b
+		write_byte( g * 15);// r, g, b
+		write_byte( b * 15); // r, g, b		
+	}
+	write_byte( 255 ); // brightnessg
+	write_byte( 8 ); // speed
+	message_end();	
+	iLast[id] = get_gametime()
+}
 // Main Menu
 show_menu_main(id)
 {
@@ -233,6 +330,10 @@ show_menu_main(id)
 	// Fix for AMXX custom menus
 	set_pdata_int(id, OFFSET_CSMENUCODE, 0)
 	show_menu(id, KEYSMENU, menu, -1, "Main Menu")
+}
+public client_disconnect(id)
+{
+	iBeacon[id] = 0
 }
 // Main Menu
 public menu_main(id, key)
@@ -403,7 +504,7 @@ public zp_show_player_menu(id)
 
 
 public menu_player( id, menu, item )
- {
+{
 	if ( item == MENU_EXIT )
 	{
 		menu_destroy( menu );
@@ -417,11 +518,57 @@ public menu_player( id, menu, item )
 
 	menu_destroy( menu );
 	return PLUGIN_HANDLED;
- }
-
+}
+public TagsMenu(id)
+{
+	if( !(zv_get_user_flags(id) & ZV_MAIN))
+	{
+		ColorChat(id, GREEN,"[GC]^3 Only^4 Full VIPs^3 may set thier^4 Tags")
+		return
+	}
+	new iM = menu_create("[VIP] Tags menu", "TagHandle")
+	menu_additem(iM,Tags[0],"",0,-1)
+	menu_additem(iM,Tags[1],"",0,-1)
+	menu_additem(iM,Tags[2],"",0,-1)
+	menu_additem(iM,Tags[3],"",0,-1)
+	menu_additem(iM,Tags[4],"",0,-1)
+	menu_additem(iM,Tags[5],"",0,-1)
+	if(zv_get_user_flags(id) & ZV_MAIN)	
+		menu_additem(iM,Tags[6],"",0,-1)
+	else menu_additem(iM, "\dCustom","",0,-1)
+	menu_display(id, iM)
+}
+public TagHandle(id, menu,item)
+{
+	switch(item)
+	{
+		case 0: client_cmd(id, "Enter_TAG ^"%s^"",Tags[0])
+		case 1: client_cmd(id, "Enter_TAG ^"%s^"",Tags[1])
+		case 2: client_cmd(id, "Enter_TAG ^"%s^"",Tags[2])
+		case 3: client_cmd(id, "Enter_TAG ^"%s^"",Tags[3])
+		case 4: client_cmd(id, "Enter_TAG ^"%s^"",Tags[4])
+		case 5: client_cmd(id, "Enter_TAG ^"%s^"",Tags[5])
+		case 6:
+		{
+			if(zv_get_user_flags(id) & ZV_MAIN)
+			{
+				client_cmd(id, "say /settag")
+				ColorChat(id, GREEN,"[GC]^3 Write your^4 Tag^3 and press enter")
+				ColorChat(id, GREEN,"[GC]^3 Write your^4 Tag^3 and press enter")
+				ColorChat(id, GREEN,"[GC]^3 Write your^4 Tag^3 and press enter")
+				ColorChat(id, GREEN,"[GC]^3 Write your^4 Tag^3 and press enter")
+			}
+			else
+			{
+				ColorChat(id, GREEN,"[GC]^3 Only^4 FULL VIPs^3 may use ^4Custom")				
+			}
+		}
+	}
+	set_tag_status_on(id)
+}
 public zp_vip_menu_show(id)
 {	
-	static menu[500]
+	static menu[600]
 	new len
 	
 	// Title
@@ -430,9 +577,8 @@ public zp_vip_menu_show(id)
 	// // 1. VIP Items
 	// len += formatex(menu[len], charsmax(menu) - len, "\r1.\w VIP Items Menu\y (/vm)^n")
 	
-	
 	// 1. Skins Menu
-	len += formatex(menu[len], charsmax(menu) - len, "\r1.\w Skins Menu\y (/hclass)^n")
+	len += formatex(menu[len], charsmax(menu) - len, "\r1.\w Tags Menu^n")
 
 	// 2. Glow Menu
 	len += formatex(menu[len], charsmax(menu) - len, "\r2.\w Glow Menu\y (/glow)^n")
@@ -442,13 +588,17 @@ public zp_vip_menu_show(id)
 
 
 	// 4. Toggle Zombie VIP Model
-	len += formatex(menu[len], charsmax(menu) - len, "\r4.\w Zombie VIP Skin\r [%s]\y (/zskin)^n",((zv_get_user_flags(id)&ZV_MAIN)&&zp_vip_model_get(id))?"ON":"OFF")
+	len += formatex(menu[len], charsmax(menu) - len, "\r4.\w Zombie VIP Skin\r [%s]\y (/zskin)^n",((zv_get_user_flags(id)&ZV_DAMAGE)&&zp_vip_model_get(id))?"ON":"OFF")
 
 	// 5. Toggle VIP Zombie Glow
-	len += formatex(menu[len], charsmax(menu) - len, "\r5.\w Zombie VIP Special Glow\r [%s]\y (/zglow)^n^n",((zv_get_user_flags(id)&ZV_MAIN)&&zp_vip_glow_get(id))?"ON":"OFF")
+	len += formatex(menu[len], charsmax(menu) - len, "\r5.\w Zombie VIP Special Glow\r [%s]\y (/zglow)^n",((zv_get_user_flags(id)&ZV_DAMAGE)&&zp_vip_glow_get(id))?"ON":"OFF")
+
+	len += formatex(menu[len], charsmax(menu) - len, "\r6.\w VIP Beacon\r [%s]\y (/zbc)^n^n",((zv_get_user_flags(id)&ZV_DAMAGE)&&iBeacon[id])?"ON":"OFF")
 
 	// 6. VIP Information
-	len += formatex(menu[len], charsmax(menu) - len, "\r6.\w VIP Information\y (/vip)^n^n")
+	len += formatex(menu[len], charsmax(menu) - len, "\r7.\w VIP Information\y (/vip)^n")
+
+	len += formatex(menu[len], charsmax(menu) - len, "\r8.\w Buy \rMini \yVIP^n^n")
 
 	// 0. Exit
 	len += formatex(menu[len], charsmax(menu) - len, "\r0.\w Exit^n")
@@ -457,7 +607,18 @@ public zp_vip_menu_show(id)
 	set_pdata_int(id, OFFSET_CSMENUCODE, 0)
 	show_menu(id, KEYSMENU, menu, -1, "VIP Menu")
 }
-
+public BSwitc(id)
+{
+	if(!( zv_get_user_flags(id) & ZV_DAMAGE))
+	{
+		ColorChat(id, GREEN, "[GC]^3 Only^4 Mini VIP^1 or^4 Full VIP^3 may use^4 beacon.")
+		return PLUGIN_HANDLED
+	}
+	if(iBeacon[id])
+		iBeacon[id] = 0
+	else iBeacon[id] = 1
+	return PLUGIN_HANDLED
+}
 // VIP Menu
 public menu_vip(id, key)
 {
@@ -474,7 +635,7 @@ public menu_vip(id, key)
 		
 		case 0://Skin Menu
 		{
-			zp_class_human_show_menu(id);
+			TagsMenu(id);
 		}
 
 		case 1: //Glow Menu
@@ -497,11 +658,18 @@ public menu_vip(id, key)
 		{
 			zp_vip_glow_toggle(id)
 		}
-		case 5: // VIP Information
+		case 5:
+		{
+			BSwitc(id)
+		}
+		case 6: // VIP Information
 		{
 			zv_information_show(id);
 		}
-
+		case 7: // VIP Information
+		{
+			client_cmd(id, "say /buyvip")
+		}
 	}
 	return PLUGIN_HANDLED;
 }

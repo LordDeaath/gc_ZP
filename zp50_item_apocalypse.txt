@@ -336,17 +336,9 @@ public fw_TakeDamage(victim, inflictor, attacker, Float:damage)
 	if(!zp_core_is_zombie(attacker))
 		return HAM_IGNORED;
 			
-	if(damage==65.0)
-	{
-		SetHamParamFloat(4, 80.0)
-		return HAM_IGNORED;
-	}
-	
-	if(damage==15.0)
-	{		
-		SetHamParamFloat(4, 20.0)
-	}
-	
+	SetHamParamFloat(4, damage+20.0)
+	if(zp_class_nemesis_get(attacker))
+		SetHamParamFloat(4, damage*2.0)
 	return HAM_IGNORED;
 		
 }

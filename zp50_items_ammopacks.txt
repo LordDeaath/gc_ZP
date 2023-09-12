@@ -25,6 +25,7 @@ native zp_sandbags_set_cost(id, &cost, itemid)
 native zp_rc_set_cost(id, &cost, itemid)
 native zp_lasermine_set_cost(id, &cost, itemid)
 native zp_apoc_set_cost(id, &cost, itemid)
+native zp_infbomb_set_cost(id, &cost, itemid)
 
 public plugin_init()
 {
@@ -69,7 +70,8 @@ public zp_fw_items_select_pre(id, itemid, ignorecost)
 	||zp_sandbags_set_cost(id, required_ammopacks, itemid)	
 	||zp_lasermine_set_cost(id, required_ammopacks, itemid)	
 	||zp_rc_set_cost(id, required_ammopacks, itemid)
-	||zp_apoc_set_cost(id, required_ammopacks, itemid))
+	||zp_apoc_set_cost(id, required_ammopacks, itemid)
+	||zp_infbomb_set_cost(id, required_ammopacks, itemid))
 
 	if(zp_is_apocalypse()&&!zp_core_is_zombie(id))
 	{
@@ -102,7 +104,8 @@ public zp_fw_items_select_post(id, itemid, ignorecost)
 	||zp_2000_set_cost(id, required_ammopacks, itemid)
 	||zp_sandbags_set_cost(id, required_ammopacks, itemid)	
 	||zp_lasermine_set_cost(id, required_ammopacks, itemid)	
-	||zp_rc_set_cost(id, required_ammopacks, itemid))
+	||zp_rc_set_cost(id, required_ammopacks, itemid)
+	||zp_infbomb_set_cost(id, required_ammopacks, itemid))
 
 	if(!zp_core_is_zombie(id))
 		Bought[id]+=required_ammopacks

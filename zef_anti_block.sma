@@ -22,19 +22,20 @@ new const Float:tHasar = 500.0 // Bug yapan zombilere her adimda verilecek zarar
 
 new const Float:incitmeSikligi = 0.6 // Bug yapanlara zarar verme sikligi (saniye cinsinden) 
 
-public plugin_init() { 
+public plugin_init()
+{ 
      
-    register_plugin(PLUGIN, VERSION, AUTHOR) 
+	register_plugin(PLUGIN, VERSION, AUTHOR) 
 	new iMap[32]
 	get_mapname(iMap, charsmax(iMap))
-	if(!equali(iMap, "zm_osprey_escape"))
+	if(!equali(iMap, "zm_osprey_escape")&&!equali(iMap, "zm_posprey_escape"))
 	{
 		pause("ad");
 		return;
 	}
-    // Tasit araclarina bug yapildiginda bug_var fonksiyonu cagrilsin 
-    RegisterHam(Ham_Blocked, "func_tracktrain", "bug_var") 
-    set_task(incitmeSikligi,"zararVer",0,"",0,"b") 
+	// Tasit araclarina bug yapildiginda bug_var fonksiyonu cagrilsin 
+	RegisterHam(Ham_Blocked, "func_tracktrain", "bug_var") 
+	set_task(incitmeSikligi,"zararVer",0,"",0,"b") 
 } 
 
 
@@ -57,9 +58,9 @@ public zararVer()
             client_print (i, print_center, "DON'T BUG, MOVE!") 
              
             if (cs_get_user_team(i) == CsTeams:1) // zombi 
-                fm_fakedamage(i, "", tHasar, DMG_GENERIC) 
+                user_slap(i,5,1)
             else if (cs_get_user_team(i) == CsTeams:2) // insan 
-                fm_fakedamage(i, "", ctHasar, DMG_GENERIC) 
+                user_slap(i,5,1)
              
             bugYapanlar[i] = false // Ceza bitti. Hala bug devam ediyorsa bir daha True olur. 
              

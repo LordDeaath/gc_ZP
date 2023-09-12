@@ -49,6 +49,7 @@ native zp_sandbags_set_cost(id, &cost, itemid)
 native zp_lasermine_set_cost(id, &cost, itemid)
 native zp_rc_set_cost(id, &cost, itemid)
 native zp_apoc_set_cost(id, &cost, itemid)
+native zp_infbomb_set_cost(id, &cost, itemid)
 
 enum _:TOTAL_FORWARDS
 {
@@ -515,7 +516,8 @@ show_items_menu(id)
 			||zp_sandbags_set_cost(id, cost, index)
 			||zp_lasermine_set_cost(id, cost, index)
 			||zp_rc_set_cost(id, cost, index)
-			||zp_apoc_set_cost(id,cost,index))
+			||zp_apoc_set_cost(id,cost,index)
+			||zp_infbomb_set_cost(id,cost,index))
 
 		if(zp_is_apocalypse()&&!zp_core_is_zombie(id))
 		{

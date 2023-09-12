@@ -1,0 +1,565 @@
+/*================================================================================
+
+-----------------------------
+-*- [ZP] Game Mode: tag -*-
+-----------------------------
+
+This plugin is part of Zombie Plague Mod and is distributed under the
+terms of the GNU General Public License. Check ZP_ReadMe.txt for details.
+
+================================================================================*/
+
+#include <amxmodx>
+#include <cstrike>
+#include <amx_settings_api>
+#include <zp50_gamemodes>
+#include <zp50_deathmatch>
+#include <zp50_grenade_frost>
+#include <fun>
+#include <engine>
+#include <hamsandwich>
+#include <cs_teams_api>
+#include <fakemeta> 
+#include <colorchat>
+#include <zp50_ammopacks>
+
+new const iSound[][] =
+{
+	"fvox/one.wav",
+	"fvox/two.wav",
+	"fvox/three.wav",
+	"fvox/four.wav",
+	"fvox/five.wav",
+	"fvox/six.wav",
+	"fvox/seven.wav",
+	"fvox/eight.wav",
+	"fvox/nine.wav",
+	"fvox/ten.wav"
+}
+
+// Settings file
+new const ZP_SETTINGS_FILE[] = "zombieplague.ini"
+
+// Default sounds
+new const sound_tag[][] = { "ambience/the_horror2.wav" }
+
+#define SOUND_MAX_LENGTH 64
+
+new Array:g_sound_tag
+new iMaxZombies___;
+new iZombies__;
+new Gamemode_Tag_;
+
+// HUD messages
+#define HUD_EVENT_X -1.0
+#define HUD_EVENT_Y 0.17
+#define HUD_EVENT_R 20
+#define HUD_EVENT_G 255
+#define HUD_EVENT_B 20
+new g_MaxPlayers
+new g_HudSync
+new cvar_tag_chance, cvar_tag_min_players
+new cvar_tag_show_hud, cvar_tag_sounds
+new cvar_tag_allow_respawn
+new Float:Round_Time , Float:Count_Down_Time
+new FirstRound;
+native sl_kill_player(id)
+new iCantInf[33]
+public plugin_end()
+{
+	ArrayDestroy(g_sound_tag)
+}
+
+public plugin_precache()
+{
+	// Register game mode at precache (plugin gets paused after this)
+	register_plugin("[ZP] Game Mode: tag", ZP_VERSION_STRING, "ZP Dev Team")
+	zp_gamemodes_register("Zombie Tag Mode")
+	
+	for(new i; i <= charsmax(iSound); i++)
+	precache_sound(iSound[i])
+	// Create the HUD Sync Objects
+	g_HudSync = CreateHudSyncObj()
+	
+	g_MaxPlayers = get_maxplayers()
+	cvar_tag_chance = register_cvar("zp_tag_chance", "95")
+	cvar_tag_min_players = register_cvar("zp_tag_min_players", "0")
+	cvar_tag_show_hud = register_cvar("zp_tag_show_hud", "1")
+	cvar_tag_sounds = register_cvar("zp_tag_sounds", "1")
+	cvar_tag_allow_respawn = register_cvar("zp_tag_allow_respawn", "0")
+	register_forward( FM_CmdStart, "Dank_Memes" )
+	RegisterHam(Ham_TraceAttack, "player", "fw_TraceAttack")
+	// Initialize arrays
+	g_sound_tag = ArrayCreate(SOUND_MAX_LENGTH, 1)
+	
+	// Load from external file
+	amx_load_setting_string_arr(ZP_SETTINGS_FILE, "Sounds", "ROUND tag", g_sound_tag)
+	
+	// If we couldn't load custom sounds from file, use and save default ones
+	new index
+	if (ArraySize(g_sound_tag) == 0)
+	{
+		for (index = 0; index < sizeof sound_tag; index++)
+			ArrayPushString(g_sound_tag, sound_tag[index])
+		
+		// Save to external file
+		amx_save_setting_string_arr(ZP_SETTINGS_FILE, "Sounds", "ROUND tag", g_sound_tag)
+	}
+	
+	// Precache sounds
+	new sound[SOUND_MAX_LENGTH]
+	for (index = 0; index < ArraySize(g_sound_tag); index++)
+	{
+		ArrayGetString(g_sound_tag, index, sound, charsmax(sound))
+		if (equal(sound[strlen(sound)-4], ".mp3"))
+		{
+			format(sound, charsmax(sound), "sound/%s", sound)
+			precache_generic(sound)
+		}
+		else
+			precache_sound(sound)
+	}
+	
+}
+
+// Deathmatch module's player respawn forward
+public zp_fw_deathmatch_respawn_pre(id)
+{	
+	if(!Gamemode_Tag_)
+		return PLUGIN_CONTINUE;
+	
+	// Respawning allowed?
+	if (!get_pcvar_num(cvar_tag_allow_respawn))
+		return PLUGIN_HANDLED;
+	
+	return PLUGIN_CONTINUE;
+}
+
+public zp_fw_gamemodes_choose_pre(game_mode_id, skipchecks)
+{		
+	if (!skipchecks)
+	{
+		// Random chance
+		if (random_num(1, get_pcvar_num(cvar_tag_chance)) != 1)
+			return PLUGIN_HANDLED;
+		
+		// Min players
+		if (GetAliveCount() < get_pcvar_num(cvar_tag_min_players))
+			return PLUGIN_HANDLED;
+	}
+	
+	// Game mode allowed
+	return PLUGIN_CONTINUE;
+}
+
+public zp_fw_gamemodes_start()
+{	
+	Gamemode_Tag_ = 1
+	FirstRound = 1;
+	
+	// Play tag sound
+	if (get_pcvar_num(cvar_tag_sounds))
+	{
+		new sound[SOUND_MAX_LENGTH]
+		ArrayGetString(g_sound_tag, random_num(0, ArraySize(g_sound_tag) - 1), sound, charsmax(sound))
+		PlaySoundToClients(sound)
+	}
+	RemoveGrenade()
+	// Allow infection for this game mode
+	zp_gamemodes_set_allow_infect()
+	new id
+	for (id = 1; id <= g_MaxPlayers; id++)
+	{
+		// Only those of them who aren't zombies
+		if (!is_user_alive(id) || zp_core_is_zombie(id))
+			continue;
+		
+		// Switch to CT
+		cs_set_player_team(id, CS_TEAM_CT)
+	}
+	set_task(0.2, "Check_Count");
+	set_task(3.0,"Tag_Select");
+	// server_cmd("mp_auto_join_team 1");
+	// server_cmd("humans_join_team CT");
+	server_cmd("mp_round_infinite bcdefg");
+	
+	
+	if (get_pcvar_num(cvar_tag_show_hud))
+	{
+		// Show tag HUD notice
+		set_hudmessage(HUD_EVENT_R, HUD_EVENT_G, HUD_EVENT_B, HUD_EVENT_X, HUD_EVENT_Y, 1, 0.0, 5.0, 1.0, 1.0, -1)
+		ShowSyncHudMsg(0, g_HudSync, "Zombie Tag")
+	}
+}
+
+// Plays a sound on clients
+PlaySoundToClients(const sound[])
+{
+if (equal(sound[strlen(sound)-4], ".mp3"))
+	client_cmd(0, "mp3 play ^"sound/%s^"", sound)
+	else
+		client_cmd(0, "spk ^"%s^"", sound)
+}
+
+// Get Alive Count -returns alive players number-
+GetAliveCount()
+{
+	new iAlive, id
+	
+	for (id = 1; id <= g_MaxPlayers; id++)
+	{
+		if (is_user_alive(id))
+			iAlive++
+	}
+	
+	return iAlive;
+}
+
+// Get Random Alive -returns index of alive player number target_index -
+GetRandomAlive(target_index)
+{
+	new iAlive, id
+	for (id = 1; id <= g_MaxPlayers; id++)
+	{
+		if (is_user_alive(id))
+			iAlive++
+		
+		if (iAlive == target_index)
+			return id;
+	}
+	
+	return -1;
+}
+public Tag_Select()
+{	
+	if(!Gamemode_Tag_)
+		return;
+	
+	// Play tag sound
+	if (get_pcvar_num(cvar_tag_sounds)&&!FirstRound)
+	{
+		new sound[SOUND_MAX_LENGTH]
+		ArrayGetString(g_sound_tag, random_num(0, ArraySize(g_sound_tag) - 1), sound, charsmax(sound))
+		PlaySoundToClients(sound)
+	}
+	else
+	{
+		FirstRound = 0;
+	}
+	// iMaxZombies is rounded up, in case there aren't enough players
+	new id, alive_count = GetAliveCount()
+	
+	// Randomly turn iMaxZombies players into zombies
+	while (iZombies__ < iMaxZombies___)
+	{
+		// Choose random guy
+		id = GetRandomAlive(random_num(1, alive_count))
+		
+		// Dead or already a zombie
+		if (!is_user_alive(id) || zp_core_is_zombie(id))
+			continue;
+		
+		// Turn into a zombie
+		zp_core_infect(id, 0);
+		iZombies__++;
+	}
+	//client_print(0,print_chat,"Selecting Zombies!");
+	
+	set_dhudmessage(255, 0, 0, -1.0, 0.35)
+	if(iMaxZombies___ == 1)
+		show_dhudmessage(0, "Final Showdown!")
+	else 
+		show_dhudmessage(0, "Round %d", iMaxZombies___)
+	
+	set_task(Round_Time,"make_zombies_explode");
+	set_task(Count_Down_Time, "Count");
+}
+
+public unfreeze(id)
+{	
+	if(!Gamemode_Tag_)
+		return;
+	
+	if(is_user_connected(id) && is_user_alive(id))
+	{
+		zp_grenade_frost_set(id, false)
+	}
+}
+public Dank_Memes(id)
+{	
+	if(!Gamemode_Tag_)
+		return;
+	
+	if(!is_user_connected(id))
+		return;
+	
+	if(Gamemode_Tag_ == 1 && is_user_alive(id))
+	{
+		if(get_user_weapon(id) != CSW_KNIFE)
+		{
+			strip_user_weapons(id)
+			give_item(id,"weapon_knife")
+		}
+	}
+}
+public make_zombies_explode()
+{	
+	if(!Gamemode_Tag_)
+		return;
+	
+	new id
+	for (id = 1; id <= g_MaxPlayers; id++)
+	{
+		// Only those of them who aren't zombies
+		if (!is_user_alive(id) || !zp_core_is_zombie(id) || !is_user_connected(id) || Gamemode_Tag_ != 1)
+			continue;
+		// Make him explode
+		iCantInf[id] = 1
+		sl_kill_player(id)
+	}
+	iZombies__ = 0;
+	set_task(7.5, "Tag_Select");
+	
+}
+
+// Ham Trace Attack Forward
+public fw_TraceAttack(victim, attacker)
+{
+	if(!Gamemode_Tag_)
+		return HAM_IGNORED;
+	
+	// Non-player damage or self damage
+	if (victim == attacker || !is_user_alive(attacker))
+		return HAM_IGNORED;
+	
+	if(!zp_core_is_zombie(attacker))
+		return HAM_IGNORED;
+	
+	if(zp_core_is_zombie(victim))
+		return HAM_IGNORED;
+	
+	if(zp_grenade_frost_get(attacker))
+		return HAM_SUPERCEDE;	
+		
+	if(iCantInf[attacker])
+		return HAM_SUPERCEDE;	
+		
+	zp_core_force_cure(attacker)
+	set_task(1.5,"unfreeze",victim)
+	zp_core_infect(victim, attacker)	
+	zp_grenade_frost_set(victim, true)
+	set_user_health(attacker, 100);
+	return HAM_SUPERCEDE;
+}
+
+public Count()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_task(1.0, "ten")
+	set_task(2.0, "nine")
+	set_task(3.0, "eight")
+	set_task(4.0, "seven")
+	set_task(5.0, "six")
+	set_task(6.0, "five")
+	set_task(7.0, "four")
+	set_task(8.0, "three")
+	set_task(9.0, "two")
+	set_task(10.0, "one")
+}
+
+public ten()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n-= 10 =-")
+	client_cmd(0, "spk ^"fvox/ten.wav^"")
+}
+
+public nine()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n-= 9 =-")
+	client_cmd(0, "spk ^"fvox/nine.wav^"")
+}
+
+public eight()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n-= 8 =-")
+	client_cmd(0, "spk ^"fvox/eight.wav^"")
+}
+
+public seven()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n^n -= 7 =-")
+	client_cmd(0, "spk ^"fvox/seven.wav^"")
+}
+
+public six()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n^n^n -= 6 =-")
+	client_cmd(0, "spk ^"fvox/six.wav^"")
+}
+
+public five()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n^n^n^n -= 5 =-")
+	client_cmd(0, "spk ^"fvox/five.wav^"")
+	}
+
+public four()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n^n^n^n^n -= 4 =-")
+	client_cmd(0, "spk ^"fvox/four.wav^"")
+}
+
+public three()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n^n^n^n^n^n -= 3 =-")
+	client_cmd(0, "spk ^"fvox/three.wav^"")
+}
+
+public two()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(0, 180, 255, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "Zombies Explode in ^n^n^n^n^n^n^n^n^n -= 2 =-")
+	client_cmd(0, "spk ^"fvox/two.wav^"")
+}
+
+public one()
+{
+	if(!Gamemode_Tag_)
+		return;
+	set_hudmessage(255, 0, 0, -1.0, 0.28, 2, 0.02, 1.5, 0.01, 0.1, -1)
+	show_hudmessage(0, "^n-= Zombies Explode Now =-")
+	client_cmd(0, "spk ^"fvox/one.wav^"")
+}
+
+public Check_Count()
+{
+	if(!Gamemode_Tag_)
+		return;
+	
+	if(GetAliveCount() > 1) set_task(2.0,"Check_Count")
+	else 
+	{
+		announce_winner()
+	}
+	if(GetAliveCount() <= 3 )
+	{
+		iMaxZombies___ = 1;
+		Round_Time = 29.0
+		Count_Down_Time = 18.0
+	}
+	else if(GetAliveCount() <= 6 )
+	{
+		iMaxZombies___ = 2;
+		Round_Time = 27.0
+		Count_Down_Time = 16.0
+	}
+	else if(GetAliveCount() <= 12 )
+	{
+		iMaxZombies___ = 3;
+		Round_Time = 25.0
+		Count_Down_Time = 14.0
+	}
+	else if(GetAliveCount() <= 18 )
+	{
+		iMaxZombies___ = 4;
+		Round_Time = 23.0
+		Count_Down_Time = 12.0
+	}
+	else if(GetAliveCount() <= 22 )
+	{
+		iMaxZombies___ = 5;
+		Round_Time = 21.0
+		Count_Down_Time = 10.0
+	}
+	else if(GetAliveCount() <= 26 )
+	{
+		iMaxZombies___ = 6;
+		Round_Time = 19.0
+		Count_Down_Time = 8.0
+	}
+	else if(GetAliveCount() <= 30 )
+	{
+		iMaxZombies___ = 7;
+		Round_Time = 17.0
+		Count_Down_Time =6.0
+	}
+	else if(GetAliveCount() <= 32 )
+	{
+		iMaxZombies___ = 8;
+		Round_Time = 15.0
+		Count_Down_Time = 4.0
+	}
+}
+public announce_winner()
+{	
+	// server_cmd("humans_join_team any");
+	server_cmd("endround");
+	iMaxZombies___ = 0;
+}
+public RemoveGrenade()
+{	
+	if(!Gamemode_Tag_)
+		return;
+	new iEnt
+	while( (iEnt = find_ent_by_class(iEnt, "grenade")) )
+	{
+		if(pev_valid(iEnt))
+			remove_entity(iEnt)
+	}
+}
+public zp_fw_gamemodes_end()
+{
+	Gamemode_Tag_ = 0;
+	// server_cmd("humans_join_team any");
+	server_cmd("mp_round_infinite 0");
+	server_cmd("mp_freeforall 0");
+	iZombies__ = 0;
+	iMaxZombies___ = 0;
+	announce_winner()
+	new gText[32]
+	new id
+	for (id = 1; id <= g_MaxPlayers; id++)
+	{
+		iCantInf[id] = 0
+		if(!is_user_connected(id))
+			continue;
+		if(is_user_alive(id))
+		{
+			get_user_name(id, gText, 31)
+			zp_ammopacks_set(id, zp_ammopacks_get(id) + 50)
+			ColorChat(0, GREEN, "[GC]^01 %s ^03 Has won the ^04 Zombie Tag ^03 and got ^04 50 Ammo Packs!", gText)
+		}
+	}
+	remove_task();
+	
+}
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ ansicpg1252\\ deff0{\\ fonttbl{\\ f0\\ fnil\\ fcharset0 Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1049\\ f0\\ fs16 \n\\ par }
+*/

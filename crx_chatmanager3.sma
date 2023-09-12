@@ -3,6 +3,7 @@
 #include <cstrike>
 #include <fakemeta>
 #include <zmvip>
+#include <fvault>
 
 #tryinclude <cromchat>
 
@@ -241,7 +242,7 @@ public plugin_init()
 	register_plugin("Chat Manager", PLUGIN_VERSION, "OciXCrom")
 	register_cvar("CRXChatManager", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
 	register_event("SayText", "OnSayTextNameChange", "a", "2=#Cstrike_Name_Change")
-	register_clcmd("say /tag", "Swapt")
+	register_clcmd("say /mytag", "Swapt")
 	register_clcmd("say /ta", "Swapt")
 	switch(g_eSettings[SAY_METHOD])
 	{
@@ -264,8 +265,11 @@ public Swapt(id)
 	if(iAdminTag[id])
 		iAdminTag[id] = 0
 	else iAdminTag[id] = 1
+	new pid[33], Data[16]
+	get_user_authid(id, pid, charsmax(pid))
+	num_to_str(iAdminTag[id], Data,charsmax(Data))
+	fvault_set_data("Tags", pid, Data)
 }
-	
 
 public plugin_end()
 {
@@ -349,6 +353,12 @@ public crxranks_user_level_updated(id, iLevel)
 
 public UpdateData(id)
 {
+	new pid[33], Data[16]
+	get_user_authid(id, pid, charsmax(pid))	
+	if( fvault_get_data("Tags", pid,Data,charsmax(Data)) )
+	{
+		iAdminTag[id] = str_to_num(Data)
+	}
 	static eItem[PlayerInfo], i
 	g_ePlayerData[id][PDATA_PREFIX][0] = EOS
 	g_ePlayerData[id][PDATA_CHAT_COLOR][0] = EOS
@@ -381,7 +391,7 @@ public UpdateData(id)
 		{
 			ArrayGetArray(g_aChatColors, i, eItem)
 
-			if(meets_requirements(id, eItem[INFO_TYPE], eItem[INFO]))
+			if(meets_requirements(id, eItem[INFO_TYPE], eItem[INFO])>1)
 			{
 				copy(g_ePlayerData[id][PDATA_CHAT_COLOR], charsmax(g_ePlayerData[][PDATA_CHAT_COLOR]), eItem[DATA])
 				break
@@ -950,6 +960,8 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	if(g_ePlayerData[id][PDATA_PREFIX_ENABLED] && !iAdminTag[id])
 	{
 		get_user_authid(id, iStmID,charsmax(iStmID))
+		if((zv_get_user_flags(id) & ZV_DAMAGE) && !(get_user_flags(id) & ADMIN_KICK))
+			replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, "[VIP]")
 		if(equal(iStmID,"STEAM_0:1:555112350"))
 			replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, "[Co-Owner]")
 		else if(equal(iStmID,"STEAM_0:0:438245230"))
@@ -960,11 +972,14 @@ apply_replacements(const szFormat[], id, iAlive, CsTeams:iTeam, const szArgs[], 
 	}
 	else
 	{
-		if(zv_get_user_flags(id) & ZV_MAIN)
+		if(zv_get_user_flags(id) & ZV_DAMAGE)
 		{
 			static Tag[32]
 			get_user_tag(id,Tag,charsmax(Tag))
-			replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, Tag)
+			if(zv_get_user_flags(id) & ZV_MULTI)
+				replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, "[Mini VIP]")
+			else
+				replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, Tag)
 		}
 		else
 			replace_string(szMessage, iLen, ARG_ADMIN_PREFIX, "")
@@ -1231,7 +1246,7 @@ bool:invalid_info_type(const iInfoType, const szInfoType[], const iLine)
 	return false
 }
 
-bool:meets_requirements(const id, const iInfoType, const szInfo[])
+meets_requirements(const id, const iInfoType, const szInfo[])
 {
 	switch(iInfoType)
 	{
@@ -1242,54 +1257,56 @@ bool:meets_requirements(const id, const iInfoType, const szInfo[])
 
 			if(g_ePlayerData[id][PDATA_ADMIN_FLAGS] & iFlags == iFlags)
 			{
-				return true
+				return 2
 			}
+			if(zv_get_user_flags(id) & ZV_DAMAGE)
+				return 1
 		}
 		case INFOTYPE_NAME:
 		{
 			if(equali(g_ePlayerData[id][PDATA_NAME], szInfo))
 			{
-				return true
+				return 2
 			}
 		}
 		case INFOTYPE_IP:
 		{
 			if(equal(g_ePlayerData[id][PDATA_IP], szInfo))
 			{
-				return true
+				return 2
 			}
 		}
 		case INFOTYPE_STEAM:
 		{
 			if(equal(g_ePlayerData[id][PDATA_STEAM], szInfo))
 			{
-				return true
+				return 2
 			}
 		}
 		case INFOTYPE_ANY_FLAG:
 		{
 			if(g_ePlayerData[id][PDATA_ADMIN_FLAGS] & read_flags(szInfo))
 			{
-				return true
+				return 2
 			}
 		}
 		case INFOTYPE_NO_PREFIX:
 		{
 			if(!g_ePlayerData[id][PDATA_PREFIX][0] || !g_ePlayerData[id][PDATA_PREFIX_ENABLED])
 			{
-				return true
+				return 2
 			}
 		}
 		case INFOTYPE_LEVEL:
 		{
 			if(crxranks_get_user_level(id) >= str_to_num(szInfo))
 			{
-				return true
+				return 2
 			}
 		}
 	}
 
-	return false
+	return 0
 }
 
 log_config_error(const iLine, const szText[], any:...)
@@ -1356,8 +1373,16 @@ public plugin_natives()
 	register_native("cm_total_prefixes", 				"_cm_total_chat_colors")
 	register_native("cm_total_say_formats", 			"_cm_total_say_formats")
 	register_native("cm_update_player_data", 			"_cm_update_player_data")
+	register_native("set_tag_status_on", "SetTagOn",1)
 }
-
+public SetTagOn(id)
+{
+	iAdminTag[id] = 1
+	new pid[33], Data[16]
+	get_user_authid(id, pid, charsmax(pid))
+	num_to_str(iAdminTag[id], Data,charsmax(Data))
+	fvault_set_data("Tags", pid, Data)
+}
 public native_filter(const szNative[], id, iTrap)
 {
 	if(!iTrap)

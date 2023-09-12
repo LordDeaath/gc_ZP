@@ -16,6 +16,7 @@
 #include <zp50_class_plasma>
 #include <zp50_class_sniper>
 #include <zp50_class_knifer>
+#include <colorchat>
 
 native zp_set_human_glow(id, bool:on);
 
@@ -118,13 +119,15 @@ public plugin_init() {
 	register_concmd("zp_vip_remove", "remove_vip", ADMIN_RCON,"<authid>")
 	register_concmd("zp_vip_check", "check_vip", ADMIN_RCON,"<authid>")
 	register_concmd("zp_vip_dump", "dump_vip",ADMIN_RCON);
-	check_date();
+//	check_date();
 	reload_vips(0,0,0)
 #endif
 #if MODE & (1<<1)
 	//register_clcmd("say /vm", "menu_open")
 	register_clcmd("say /glow", "GlowMenu")
+	register_clcmd("say /myvip", "VIPData")
 	register_clcmd("amx_glowmenu", "GlowMenu")
+	register_clcmd("say /vipsub", "ExpireDate")
 	// g_nonvip_tease = register_cvar("zp_vip_nonvip_tease", "1")
 	// g_menu_close = register_cvar("zp_vip_menu_close", "1")
 	
@@ -181,12 +184,14 @@ bool:is_special_mode()
 }*/
 new Used[33]
 
-public chache_cvars() {
+public chache_cvars() 
+{
 	for(new i=1;i<33;i++)
 	{
 		Used[i]=false;
 		Bought[i]=0;
 	}
+	check_date();
 }
 #if MODE & (1<<1) || MODE & (1<<0)
 public plugin_natives() {
@@ -283,18 +288,8 @@ public zp_user_infected_post(id, infector, nemesis) {
 	
 }
 
-public client_connect(id) {
-	#if MODE & (1<<0)
+public client_connect(id)
 	set_flags(id)
-	if(get_pcvar_num(g_show_vips) == 1 && g_user_privileges[id] & FLAG_A) {
-#else
-	if(get_pcvar_num(g_show_vips) == 1 && get_user_flags(id) & VIPACCES) {
-#endif
-		new name[100]
-		get_user_name(id, name, 100)
-		client_printcolor(0, "/g%L", LANG_PLAYER, "VIP_CONNECTED", name)
-	}
-}
 /*
 public menu_open(id) {
 	if(!(g_user_privileges[id] & FLAG_E))
@@ -490,7 +485,7 @@ public setVip()
 	{
 		new id = players[i]
 #if MODE & (1<<0)	
-		if (g_user_privileges[id] & FLAG_A)
+		if (g_user_privileges[id] & FLAG_D)
 #else
 		if (get_user_flags(id) & VIPACCES)
 #endif
@@ -523,9 +518,9 @@ public print_adminlist(user)
 	len = format(message, 255, "%L ", id, "VIP_STATUS")
 	if(count > 0) {
 		for(x = 0 ; x < count ; x++) {
-			len += format(message[len], 255-len, "%s%s ", adminnames[x], x < (count-1) ? ", ":"")
+			len += format(message[len], 255-len, "/t%s/y%s ", adminnames[x], x < (count-1) ? ", ":"")
 			if(len > 96 ) {
-				client_printcolor(user, "/g%s", message)
+				client_printcolor(user, "/t%s", message)
 				len = format(message, 255, "")
 			}
 		}
@@ -910,11 +905,12 @@ public reload_vips(id,level,cid) {
 }
 public check_date()
 {
-	new holder[20]
-	new y, m ,d
+	new holder[20], tholder[8],szData[64],szValue[32] 
+	new y, m ,d, h
 	date(y, m, d)
+	time(h)
 	format(holder, charsmax(holder), "m%dd%dy%d", m, d, y)
-
+	formatex(tholder,charsmax(tholder),"h%d",h-1)
 	new configdir[200]
 	get_configsdir(configdir,199)
 
@@ -927,14 +923,47 @@ public check_date()
 	for(new i = 1; i < pnum; i++)
 	{
 		read_file(configfile1, i, text, 511, len)
+		strtok2(text,szData,24,szValue,24,'=',LTRIM_LEFT)
+//		log_to_file("vips_db.log", "%s | %s | %s",text, szValue, tholder)
 		if ( contain(text, holder) != -1 ) 
 		{
-			DeleteLine(configfile1, i)
+			if( equal(szValue, tholder))
+			{
+				DeleteLine(configfile1, i)
+				log_to_file("vips_expired.log", "%s Expired",text)
+			}
 		}
 	}
 	return PLUGIN_HANDLED
 }
-
+public ExpireDate(id)
+{
+	new holder[32]
+	new configdir[200],configfile1[200]
+	get_configsdir(configdir,199)
+	format(configfile1,199,"%s/vips.ini",configdir)
+	get_user_authid(id, holder,charsmax(holder))
+	new text[512], len, iStmFormat[40],iFinalTxt[180]
+	new pnum = file_size(configfile1,1)
+	for(new i = 1; i < pnum; i++)
+	{
+		read_file(configfile1, i, text, 511, len)
+		if ( contain(text, holder) != -1 ) 
+		{
+			formatex(iStmFormat,charsmax(iStmFormat),"^"%s^"",holder)
+			replace_all(text,charsmax(text), iStmFormat,"")
+			replace_all(text,charsmax(text),"^"^"","")
+			replace_all(text,charsmax(text),"^"bd^"","")
+			replace_all(text,charsmax(text),"^"ade^"","")
+			replace_all(text,charsmax(text),"^"ce^"","")
+			replace_all(text,charsmax(text),";","^1| ")			
+			formatex(iFinalTxt,charsmax(iFinalTxt),"[GC]^3 ID:^4 %s ^4 %s", holder, text)
+			ColorChat(id,GREEN,"%s",iFinalTxt)
+			break;
+		}
+	}
+	return PLUGIN_HANDLED
+}
 
 DeleteLine( const szFilename[ ], const iLine )
 {
@@ -1174,6 +1203,8 @@ public native_get_bought(id)
 #if MODE & (1<<0)
 public native_zv_get_user_flags(id)
 	return g_user_privileges[id]
+public VIPData(id) 
+	client_printcolor(id, "/g[GC]/y Your VIP Access is %d!", g_user_privileges[id])
 #endif
 #if MODE & (1<<1)
 /*
@@ -1199,7 +1230,7 @@ public plugin_end() if(items_database) ArrayDestroy(items_database)*/
 public GlowMenu(id)
 {		
 	
-	if(!(g_user_privileges[id]&FLAG_A))
+	if(!(g_user_privileges[id]&FLAG_D))
 	{
 		client_printcolor(id, "/g%s /y%L", CHAT_PREFIX, id, "NOT_A_VIP")
 		return PLUGIN_HANDLED;
@@ -1246,14 +1277,18 @@ public glow_handler(id,menu,item)
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;	
 	}
-	
+	if(zp_class_survivor_get(id) || zp_class_sniper_get(id) || zp_class_knifer_get(id) || zp_class_plasma_get(id))
+	{
+		ColorChat(id, GREEN,"[GC]^3You can't glow as a^4 special")
+		return PLUGIN_HANDLED;
+	}
 	if(zp_core_is_zombie(id))
 	{		
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
 	}
 	
-	if(!(g_user_privileges[id]&FLAG_A))
+	if(!(g_user_privileges[id]&FLAG_D))
 	{
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;	
@@ -1340,9 +1375,10 @@ public glow_handler(id,menu,item)
 
 public zp_user_humanized_post(id)
 {
-	if(!(g_user_privileges[id]&FLAG_A))
+	if(!(g_user_privileges[id]&FLAG_D))
 		return;
-		
+	if(zp_class_survivor_get(id) || zp_class_sniper_get(id) || zp_class_knifer_get(id) || zp_class_plasma_get(id))
+		return;		
 	switch(g_PlayerGlow[id])
 	{
 		case 0:		
